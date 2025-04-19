@@ -1,12 +1,28 @@
-import { clerkMiddleware } from '@clerk/nextjs/server'
+// middleware.ts
+import { NextRequest, NextResponse } from "next/server";
+import { verifyToken } from "./lib/jwt"; // Create this simple utility
 
-export default clerkMiddleware()
+export async function middleware(request: NextRequest) {
+  // Get the token from cookies or headers
+  const token = request.cookies.get("token")?.value;
+
+  if (!token) {
+    // Redirect to login or return unauthorized
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  try {
+    // Verify JWT without database access
+    const payload = verifyToken(token);
+
+    // Continue to the protected route
+    return NextResponse.next();
+  } catch (error) {
+    // Invalid token
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+}
 
 export const config = {
-  matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
-  ],
-}
+  matcher: ["/protected/:path*"], // Add your protected routes
+};

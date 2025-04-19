@@ -6,15 +6,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
         {
             protocol: 'https',
-            hostname: 'img.clerk.com'
+            hostname: 'example.com' // Replace with your actual domain
         },
         {
             protocol: 'https',
-            hostname: 'imgages.clerk.dev'
+            hostname: 'another-domain.com' // Replace with your actual domain
         }
     ]
-}
-
+  }
 };
 
 export default nextConfig;

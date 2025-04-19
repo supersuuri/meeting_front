@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/context/AuthContext";
 import { CallControls, CallingState, CallParticipantsList, CallStatsButton, PaginatedGridLayout, SpeakerLayout, useCallStateHooks } from "@stream-io/video-react-sdk";
 import { useState } from "react";
 import Loading from "./Loading";
@@ -19,7 +19,7 @@ const MeetingRoom = () => {
     const [showParticipants, setShowParticipants] = useState(false);
     const router = useRouter();
     const pathname = usePathname()  
-    const { user } = useUser();
+    const { user } = useAuth();
     if(!user) return
     const { useCallCallingState } = useCallStateHooks()
     const callingState = useCallCallingState()

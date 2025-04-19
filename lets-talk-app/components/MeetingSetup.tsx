@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/context/AuthContext";
 import { DeviceSettings, useCall, useCallStateHooks, VideoPreview } from "@stream-io/video-react-sdk";
 import Alert from "./Alert";
 import { useEffect, useState } from "react";
@@ -12,7 +12,7 @@ const MeetingSetup = ({
     setIsSetupComplete: (value: boolean) => void;
   }) => {
 
-    const {user} = useUser()
+    const {user} = useAuth()
     if(!user) return
 
     const call = useCall();

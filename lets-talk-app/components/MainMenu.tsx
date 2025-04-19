@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation"
 import MenuItemCard from "./MenuItemCard"
 import { Button } from "./ui/button"
@@ -8,7 +9,6 @@ import { Textarea } from "./ui/textarea"
 import { useEffect, useState } from "react"
 import { Input } from "./ui/input"
 import DatePicker from "react-datepicker";
-import { useUser } from "@clerk/nextjs"
 import Loading from "./Loading"
 import { useStreamVideoClient } from "@stream-io/video-react-sdk"
 import { toast } from "sonner"
@@ -21,7 +21,7 @@ const initialValues = {
   };
 
 const MainMenu = () => {
-  const {user} = useUser()
+  const {user} = useAuth()
     const router = useRouter();
     const [values, setValues] = useState(initialValues);
     const [meetingState, setMeetingState] = useState< 'Schedule' | 'Instant' | undefined>(undefined);

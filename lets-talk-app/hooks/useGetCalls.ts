@@ -1,11 +1,11 @@
 'use client'
 
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/context/AuthContext";
 import { Call, useStreamVideoClient } from "@stream-io/video-react-sdk";
 import { useEffect, useState } from "react";
 
 export const useGetCalls = () => {
-    const { user } = useUser();
+    const { user } = useAuth();
     const client = useStreamVideoClient();
     const [calls, setCalls] = useState<Call[]>();
     const [isLoading, setIsLoading] = useState(false);

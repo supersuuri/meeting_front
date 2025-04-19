@@ -2,15 +2,21 @@
 "use client";
 
 // Import necessary hooks and components
-import { useUser } from "@clerk/nextjs"; // Retrieves the authenticated user
 import { useStreamVideoClient } from "@stream-io/video-react-sdk"; // Handles video call functionalities
 import { useRouter } from "next/navigation"; // Enables client-side navigation in Next.js
 import { Button } from "@/components/ui/button"; // Reusable button component
 import Image from "next/image"; // Next.js component for optimized image rendering
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 // Define a PersonalMeetingInfo component to display meeting details
-const PersonalMeetingInfo = ({ title, description }: { title: string; description: string }) => {
+const PersonalMeetingInfo = ({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) => {
   return (
     // Flex container to align title and description
     <div className="flex flex-col items-start gap-2 xl:flex-row text-black">
@@ -29,9 +35,9 @@ const PersonalMeetingInfo = ({ title, description }: { title: string; descriptio
 // Define the main component for the personal meeting room page
 const MyRoomPage = () => {
   const router = useRouter(); // Initialize the router for navigation
-  const { user } = useUser(); // Retrieve the logged-in user
+  const { user } = useAuth(); // Use your custom auth hook instead of useUser
   const client = useStreamVideoClient(); // Get the Stream Video client instance
-  
+
   const meetingId = user?.id; // Set the meeting ID to the user's ID
 
   // Function to start a personal meeting room
@@ -57,29 +63,38 @@ const MyRoomPage = () => {
     <section className="flex size-full flex-col gap-10 text-white animate-fade-in">
       {/* Page title */}
       <h1 className="text-xl font-bold lg:text-3xl">Personal Meeting Room</h1>
-      
+
       {/* Meeting details PersonalMeetingInfo */}
       <div className="flex w-full flex-col gap-8 xl:max-w-[900px]">
-        <PersonalMeetingInfo title="Topic" description={`${user?.firstName || user?.username || 'No Name Found'}'s Meeting Room`} />
+        <PersonalMeetingInfo
+          title="Topic"
+          description={`${
+            user?.firstName || user?.username || "No Name Found"
+          }'s Meeting Room`}
+        />
         <PersonalMeetingInfo title="Meeting ID" description={meetingId!} />
         <PersonalMeetingInfo title="Invite Link" description={meetingLink} />
       </div>
-      
+
       {/* Action buttons */}
       <div className="flex gap-5">
         {/* Button to start the meeting */}
-        <Button className="rounded bg-blue-700 p-4 hover:bg-blue-400 px-6" onClick={startRoom}>
+        <Button
+          className="rounded bg-blue-700 p-4 hover:bg-blue-400 px-6"
+          onClick={startRoom}
+        >
           Start Meeting
         </Button>
-        
+
         {/* Button to copy the invitation link */}
         <Button
           className="bg-gray-700"
           onClick={() => {
             navigator.clipboard.writeText(meetingLink); // Copy link to clipboard
-            toast("Link Copied",{
+            toast("Link Copied", {
               duration: 3000,
-              className: '!bg-gray-300 !rounded-3xl !py-8 !px-5 !justify-center'
+              className:
+                "!bg-gray-300 !rounded-3xl !py-8 !px-5 !justify-center",
             });
           }}
         >
