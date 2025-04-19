@@ -42,17 +42,25 @@ const MyRoomPage = () => {
 
   // Function to start a personal meeting room
   const startRoom = async () => {
-    if (!client || !user) return; // Ensure client and user exist
-
-    // Create a new call instance using the user's ID
-    const personalCall = client.call("default", meetingId!);
-    await personalCall.getOrCreate({
-      data: {
-        starts_at: new Date().toISOString(), // Set the meeting start time
-      },
-    });
-
-    router.push(`/meeting/${meetingId}`); // Navigate to the meeting page
+    if (!client || !user) {
+      toast.error("Not authenticated or video client not initialized");
+      return;
+    }
+  
+    try {
+      // Create a new call instance using the user's ID
+      const personalCall = client.call("default", meetingId!);
+      await personalCall.getOrCreate({
+        data: {
+          starts_at: new Date().toISOString(), // Set the meeting start time
+        },
+      });
+  
+      router.push(`/meeting/${meetingId}`);
+    } catch (error) {
+      console.error("Failed to start meeting:", error);
+      toast.error("Failed to start meeting. Please try again.");
+    }
   };
 
   // Generate the invite link for the meeting

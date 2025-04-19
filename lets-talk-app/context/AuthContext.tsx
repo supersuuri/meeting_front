@@ -1,7 +1,7 @@
 // context/AuthContext.tsx
-'use client';
+"use client";
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from "react";
 
 type User = {
   id: string;
@@ -50,28 +50,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkUserLoggedIn = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
           setIsLoading(false);
           return;
         }
 
-        const response = await fetch('/api/auth/me', {
+        const response = await fetch("/api/auth/me", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
           setIsAuthenticated(true);
         } else {
-          localStorage.removeItem('token');
+          localStorage.removeItem("token");
         }
       } catch (error) {
-        console.error('Failed to fetch user:', error);
-        localStorage.removeItem('token');
+        console.error("Failed to fetch user:", error);
+        localStorage.removeItem("token");
       } finally {
         setIsLoading(false);
       }
@@ -80,13 +80,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkUserLoggedIn();
   }, []);
 
+  // context/AuthContext.tsx modifications
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
       });
@@ -94,15 +95,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || "Login failed");
       }
 
-      localStorage.setItem('token', data.token);
+      // Store token in both cookie and localStorage for compatibility
+      localStorage.setItem("token", data.token);
+
       setUser(data.user);
       setIsAuthenticated(true);
       return data;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -112,10 +115,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const register = async (userData: RegisterData) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(userData),
       });
@@ -123,12 +126,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.message || "Registration failed");
       }
 
       return data;
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error("Registration error:", error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -136,7 +139,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     setUser(null);
     setIsAuthenticated(false);
   };
