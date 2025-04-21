@@ -1,16 +1,17 @@
 // app/(auth)/login/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
-import Link from 'next/link';
+import { useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+import Link from "next/link";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
@@ -21,10 +22,10 @@ const LoginPage = () => {
 
     try {
       await login(email, password);
-      toast.success('Login successful');
-      router.push('/');
+      toast.success("Login successful");
+      router.push("/");
     } catch (error: any) {
-      toast.error(error.message || 'Login failed');
+      toast.error(error.message || "Login failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -58,25 +59,34 @@ const LoginPage = () => {
             <label htmlFor="password" className="block text-gray-700">
               Password
             </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded-md"
-              required
-            />
+              <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-2 border rounded-md"
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-gray-600 hover:text-gray-900"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
           <button
             type="submit"
             disabled={isSubmitting}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
-            {isSubmitting ? 'Logging in...' : 'Login'}
+            {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
         <p className="mt-4 text-center">
-          Don't have an account?{' '}
+          Don't have an account?{" "}
           <Link href="/register" className="text-blue-600 hover:underline">
             Register
           </Link>
