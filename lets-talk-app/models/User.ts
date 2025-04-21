@@ -1,39 +1,43 @@
 // models/User.ts
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 const UserSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: [true, 'Please provide a username'],
+    required: [true, "Please provide a username"],
     unique: true,
   },
   email: {
     type: String,
-    required: [true, 'Please provide an email'],
+    required: [true, "Please provide an email"],
     unique: true,
     match: [
       /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Please provide a valid email',
+      "Please provide a valid email",
     ],
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
+    required: [true, "Please provide a password"],
     minlength: 6,
     select: false,
   },
   firstName: {
     type: String,
-    default: '',
+    default: "",
   },
   lastName: {
     type: String,
-    default: '',
+    default: "",
   },
   imageUrl: {
     type: String,
-    default: '/assets/default-avatar.png',
+    default: "/assets/images/avatar-1.svg",
+  },
+  bio: {
+    type: String,
+    default: "",
   },
   createdAt: {
     type: Date,
@@ -42,8 +46,8 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
     next();
   }
   const salt = await bcrypt.genSalt(10);
@@ -55,4 +59,4 @@ UserSchema.methods.matchPassword = async function (enteredPassword: string) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-export default mongoose.models.User || mongoose.model('User', UserSchema);
+export default mongoose.models.User || mongoose.model("User", UserSchema);

@@ -60,10 +60,12 @@ const NavBar = () => {
         {/* User button */}
         <div className="hover:scale-150 duration-500 ">
           <div>
-            {/* Add your own user menu/button here */}
-            <button className="px-4 py-2 rounded-md bg-blue-600 text-white">
-              Profile
-            </button>
+            {/* Profile button with navigation */}
+            <Link href="/profile">
+              <button className="px-4 py-2 rounded-md bg-blue-600 text-white">
+                Profile
+              </button>
+            </Link>
           </div>
         </div>
       </nav>
