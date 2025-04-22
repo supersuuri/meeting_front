@@ -1,13 +1,14 @@
-import MainMenu from "@/components/MainMenu"
-import StatusBar from "@/components/StatusBar"
+import StatusBar from "@/components/StatusBar";
+import MainMenu from "@/components/MainMenu";
+import GanttChart from "@/components/GanttChart";
 
 const HomePage = () => {
-    return (
-        <div className="flex flex-col gap-32 pt-20 pl-10 items-center max-md:gap-10 md:flex-row animate-fade-in">
-            <MainMenu/>
-            <StatusBar/>
-        </div>
-    )
-}
+  return (
+    <section className="flex size-full flex-row gap-10 animate-fade-in mt-10">
+      <MainMenu />
+      <GanttChart />
+    </section>
+  );
+};
 
-export default HomePage
+export default HomePage;
