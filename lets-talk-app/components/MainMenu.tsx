@@ -103,9 +103,9 @@ const MainMenu = () => {
   if (!client || !user) return <Loading />;
 
   return (
-    <section className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
+    <section className="flex flex-col gap-6 w-full max-w-md mx-auto">
       <Dialog>
-        <DialogTrigger>
+        <DialogTrigger className="w-full">
           <MenuItemCard
             img="/assets/new-meeting.svg"
             title="New Meeting"
@@ -139,7 +139,7 @@ const MainMenu = () => {
       </Dialog>
 
       <Dialog>
-        <DialogTrigger>
+        <DialogTrigger className="w-full">
           <MenuItemCard
             img="/assets/join-meeting.svg"
             title="Join Meeting"
@@ -172,7 +172,7 @@ const MainMenu = () => {
       </Dialog>
 
       <Dialog>
-        <DialogTrigger>
+        <DialogTrigger className="w-full">
           <MenuItemCard
             img="/assets/calendar.svg"
             title="Schedule"
@@ -220,13 +220,15 @@ const MainMenu = () => {
         </DialogContent>
       </Dialog>
 
-      <MenuItemCard
-        img="/assets/recordings2.svg"
-        title="Recordings"
-        bgColor="bg-blue-600"
-        hoverColor="hover:bg-blue-800"
-        handleClick={() => router.push("/recordings")}
-      />
+      <div className="w-full">
+        <MenuItemCard
+          img="/assets/recordings2.svg"
+          title="Recordings"
+          bgColor="bg-blue-600"
+          hoverColor="hover:bg-blue-800"
+          handleClick={() => router.push("/recordings")}
+        />
+      </div>
     </section>
   );
 };
