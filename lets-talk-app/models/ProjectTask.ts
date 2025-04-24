@@ -1,50 +1,18 @@
 import mongoose from "mongoose";
 
 const ProjectTaskSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  projectName: {
-    type: String,
-    required: [true, "Please provide a project name"],
-  },
-  taskName: {
-    type: String,
-    required: [true, "Please provide a task name"],
-  },
-  startDate: {
-    type: Date,
-    required: [true, "Please provide a start date"],
-  },
-  endDate: {
-    type: Date,
-    required: [true, "Please provide an end date"],
-  },
-  progress: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 100,
-  },
-  dependencies: {
-    type: [String],
-    default: [],
-  },
-  assignedTo: {
-    type: String,
-    default: "",
-  },
-  color: {
-    type: String,
-    default: "#2196F3",
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  name: { type: String, required: true },
+  start: { type: Date, required: true },
+  end: { type: Date, required: true },
+  progress: { type: Number, default: 0 },
+  id: { type: String, required: true, unique: true },
+  type: { type: String, enum: ["task", "milestone"], default: "task" },
+  dependencies: { type: [String], default: [] },
+  isDisabled: { type: Boolean, default: false },
+  styles: {
+    progressColor: { type: String },
+    progressSelectedColor: { type: String },
   },
 });
 
-export default mongoose.models.ProjectTask ||
-  mongoose.model("ProjectTask", ProjectTaskSchema);
+export default mongoose.models.ProjectTask || mongoose.model("ProjectTask", ProjectTaskSchema);

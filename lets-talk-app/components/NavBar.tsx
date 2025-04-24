@@ -108,7 +108,7 @@ const NavBar = () => {
         </section>
 
         {/* User button */}
-        <div className="relative">
+        <div className="relative flex gap-6 items-center">
           <DateAndTime />
           <button
             onClick={() => setIsOpen(!isOpen)}
