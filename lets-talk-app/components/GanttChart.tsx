@@ -1,192 +1,281 @@
-"use client"; // Only if using app router
+/* app/page.tsx */
+'use client';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Gantt, Task, ViewMode } from 'gantt-task-react';
+import 'gantt-task-react/dist/index.css';
 
-import React, { useState } from "react";
-import { Gantt, Task, ViewMode } from "gantt-task-react";
-import "gantt-task-react/dist/index.css";
+interface ProjectTask {
+  _id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  progress: number;
+  type: 'task' | 'milestone';
+  userId: string;
+}
 
-const initialTasks: Task[] = [
-  {
-    start: new Date("2025-04-21"),
-    end: new Date("2025-04-25"),
-    name: "Design Phase",
-    id: "Task_1",
-    type: "task",
-    progress: 80,
-    isDisabled: false,
-    styles: {
-      progressColor: "#2196f3",
-      progressSelectedColor: "#1976d2",
-    },
-  },
-  {
-    start: new Date("2025-04-26"),
-    end: new Date("2025-05-02"),
-    name: "Development Phase 1",
-    id: "Task_2",
-    type: "task",
-    progress: 40,
-    isDisabled: false,
-    dependencies: ["Task_1"],
-    styles: {
-      progressColor: "#4caf50",
-      progressSelectedColor: "#388e3c",
-    },
-  },
-  {
-    start: new Date("2025-05-03"),
-    end: new Date("2025-05-06"),
-    name: "Testing",
-    id: "Task_3",
-    type: "task",
-    progress: 10,
-    isDisabled: false,
-    dependencies: ["Task_2"],
-    styles: {
-      progressColor: "#f44336",
-      progressSelectedColor: "#c62828",
-    },
-  },
-  {
-    start: new Date("2025-05-07"),
-    end: new Date("2025-05-07"),
-    name: "Release v1.0",
-    id: "Milestone_1",
-    type: "milestone",
-    progress: 0,
-    isDisabled: false,
-    dependencies: ["Task_3"],
-    styles: {
-      progressColor: "#ff9800",
-      progressSelectedColor: "#ef6c00",
-    },
-  },
-  {
-    start: new Date("2025-05-08"),
-    end: new Date("2025-05-12"),
-    name: "Post-Release Bug Fixes",
-    id: "Task_4",
-    type: "task",
-    progress: 0,
-    isDisabled: false,
-    dependencies: ["Milestone_1"],
-    styles: {
-      progressColor: "#9c27b0",
-      progressSelectedColor: "#7b1fa2",
-    },
-  },
-];
+interface GanttTask extends Task {
+  id: string;
+  name: string;
+  start: Date;
+  end: Date;
+  progress: number;
+  type: 'task' | 'milestone';
+}
 
-const GanttChartTest = () => {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+const GanttChart = () => {
+  const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [newTask, setNewTask] = useState({
-    name: "",
-    start: "",
-    end: "",
+    name: '',
+    startDate: '',
+    endDate: '',
     progress: 0,
+    type: 'task' as 'task' | 'milestone',
   });
+  const [editTask, setEditTask] = useState<GanttTask | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddTask = () => {
-    const task: Task = {
-      id: `Task_${tasks.length + 1}`,
-      name: newTask.name,
-      start: new Date(newTask.start),
-      end: new Date(newTask.end),
-      type: "task",
-      progress: newTask.progress,
-      isDisabled: false,
-      styles: {
-        progressColor: "#607d8b",
-        progressSelectedColor: "#455a64",
-      },
-    };
-    setTasks([...tasks, task]);
-    setIsPopupOpen(false);
-    setNewTask({ name: "", start: "", end: "", progress: 0 });
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+      fetchTasks(storedToken);
+    } else {
+      setError('Please log in to view tasks');
+    }
+  }, []);
+
+  const fetchTasks = async (authToken: string) => {
+    try {
+      const response = await axios.get('/api/tasks', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (response.data.success) {
+        const ganttTasks: GanttTask[] = response.data.tasks.map((task: ProjectTask) => ({
+          id: task._id,
+          name: task.name,
+          start: new Date(task.startDate),
+          end: new Date(task.endDate),
+          progress: task.progress,
+          type: task.type as 'task' | 'milestone',
+        }));
+        setTasks(ganttTasks);
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      setError('Failed to fetch tasks');
+    }
+  };
+
+  const addTask = async () => {
+    if (!token) {
+      setError('Please log in to add tasks');
+      return;
+    }
+    try {
+      const response = await axios.post('/api/tasks', newTask, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setNewTask({ name: '', startDate: '', endDate: '', progress: 0, type: 'task' });
+        setIsModalOpen(false);
+        fetchTasks(token);
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      setError('Failed to add task');
+    }
+  };
+
+  const updateTask = async () => {
+    if (!token || !editTask) {
+      setError('Please log in to update tasks');
+      return;
+    }
+    try {
+      const response = await axios.patch(
+        `/api/tasks/${editTask.id}`,
+        {
+          name: editTask.name,
+          startDate: editTask.start.toISOString().split('T')[0],
+          endDate: editTask.end.toISOString().split('T')[0],
+          progress: editTask.progress,
+          type: editTask.type,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.success) {
+        setEditTask(null);
+        setIsModalOpen(false);
+        fetchTasks(token);
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      setError('Failed to update task');
+    }
+  };
+
+  const openAddModal = () => {
+    setEditTask(null);
+    setNewTask({ name: '', startDate: '', endDate: '', progress: 0, type: 'task' });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (task: GanttTask) => {
+    setEditTask(task);
+    setNewTask({
+      name: task.name,
+      startDate: task.start.toISOString().split('T')[0],
+      endDate: task.end.toISOString().split('T')[0],
+      progress: task.progress,
+      type: task.type,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleModalSubmit = () => {
+    if (editTask) {
+      updateTask();
+    } else {
+      addTask();
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!token) {
+      setError('Please log in to delete tasks');
+      return;
+    }
+    try {
+      const response = await axios.delete(`/api/tasks/${taskId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        fetchTasks(token);
+      } else {
+        setError(response.data.message);
+      }
+    }
+    catch (err) {
+      setError('Failed to delete task');
+    }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md border-1 p-4 pt-6 my-6">
+    <div className="p-4 max-w-6xl mx-auto bg-white shadow-lg rounded-lg mt-10 mb-10 py-10 px-10 border-1">
+      <h1 className="text-2xl font-bold mb-4">Gantt Chart</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
       <button
-        className="my-2 px-4 py-2 bg-blue-500 text-white rounded"
-        onClick={() => setIsPopupOpen(true)}
+        onClick={openAddModal}
+        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
       >
-        Add Task
+        Add Task/Milestone
       </button>
-      <div className="rounded-lg">
-        <Gantt tasks={tasks} viewMode={ViewMode.Day} />
-      </div>
 
-      {isPopupOpen && (
-        <div className="fixed inset-0 bg-blurred rounded-lg bg-opacity-50 backdrop-blur-sm flex justify-center items-center">
-          <div className="bg-white p-6 rounded shadow-lg">
-            <h2 className="text-lg font-bold mb-4">Add New Task</h2>
-            <div className="mb-4">
-              <label className="block mb-2">Task Name</label>
+      {isModalOpen && (
+      <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white border-1 shadow-md backdrop-blur-sm p-6 rounded-lg w-96 ">
+            <h2 className="text-xl font-bold mb-4">
+              {editTask ? 'Edit Task/Milestone' : 'Add Task/Milestone'}
+            </h2>
+            <div className="space-y-4">
               <input
                 type="text"
-                className="border rounded w-full p-2"
+                placeholder="Task Name"
                 value={newTask.name}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, name: e.target.value })
-                }
+                onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                className="border p-2 w-full"
               />
-            </div>
-            <div className="mb-4">
-              <label className="block mb-2">Start Date</label>
               <input
                 type="date"
-                className="border rounded w-full p-2"
-                value={newTask.start}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, start: e.target.value })
-                }
+                value={newTask.startDate}
+                onChange={(e) => setNewTask({ ...newTask, startDate: e.target.value })}
+                className="border p-2 w-full"
               />
-            </div>
-            <div className="mb-4">
-              <label className="block mb-2">End Date</label>
               <input
                 type="date"
-                className="border rounded w-full p-2"
-                value={newTask.end}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, end: e.target.value })
-                }
+                value={newTask.endDate}
+                onChange={(e) => setNewTask({ ...newTask, endDate: e.target.value })}
+                className="border p-2 w-full"
               />
-            </div>
-            <div className="mb-4">
-              <label className="block mb-2">Progress (%)</label>
               <input
                 type="number"
-                className="border rounded w-full p-2"
+                placeholder="Progress %"
                 value={newTask.progress}
-                onChange={(e) =>
-                  setNewTask({
-                    ...newTask,
-                    progress: parseInt(e.target.value, 10),
-                  })
-                }
+                onChange={(e) => setNewTask({ ...newTask, progress: parseInt(e.target.value) })}
+                className="border p-2 w-full"
+                disabled={newTask.type === 'milestone'}
               />
+              <select
+                value={newTask.type}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, type: e.target.value as 'task' | 'milestone' })
+                }
+                className="border p-2 w-full"
+              >
+                <option value="task">Task</option>
+                <option value="milestone">Milestone</option>
+              </select>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end space-x-2 mt-4">
               <button
-                className="px-4 py-2 bg-gray-300 rounded mr-2"
-                onClick={() => setIsPopupOpen(false)}
+                onClick={() => setIsModalOpen(false)}
+                className="bg-gray-300 px-4 py-2 rounded"
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-                onClick={handleAddTask}
+                onClick={handleModalSubmit}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
               >
-                Add Task
+                {editTask ? 'Update' : 'Add'}
+              </button>
+              <button
+                onClick={() => {
+                  if (editTask) deleteTask(editTask.id);
+                }}
+                className="bg-red-500 text-white px-4 py-2 rounded"
+              >
+                Delete
               </button>
             </div>
           </div>
         </div>
       )}
+      
+
+      {tasks.length > 0 ? (
+        <Gantt
+          tasks={tasks}
+          viewMode={ViewMode.Day}
+          columnWidth={60}
+          listCellWidth="200px"
+          barCornerRadius={3}
+          barProgressColor="#4caf50"
+          barBackgroundColor="#2196f3"
+          milestoneBackgroundColor="#f44336"
+          onClick={(task) =>
+            openEditModal({
+              id: task.id,
+              name: task.name,
+              start: task.start,
+              end: task.end,
+              progress: task.progress,
+              type: task.type as 'task' | 'milestone',
+            })
+          }
+        />
+      ) : (
+        <p>No tasks available</p>
+      )}
     </div>
   );
 };
 
-export default GanttChartTest;
+export default GanttChart;
