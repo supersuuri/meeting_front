@@ -175,7 +175,7 @@ const MainMenu = () => {
         <DialogTrigger className="w-full">
           <MenuItemCard
             img="/assets/calendar.svg"
-            title="Schedule"
+            title="Notes"
             bgColor="bg-blue-600"
             hoverColor="hover:bg-blue-800"
           />

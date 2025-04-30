@@ -1,380 +1,280 @@
-"use client";
+/* app/page.tsx */
+'use client';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Gantt, Task, ViewMode } from 'gantt-task-react';
+import 'gantt-task-react/dist/index.css';
 
-import { useProjectTasks, ProjectTask } from "@/hooks/useProjectTasks";
-import { useEffect, useState } from "react";
-import Alert from "./Alert";
-import { Button } from "./ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import {
-  format,
-  addDays,
-  eachDayOfInterval,
-  isSameDay,
-  differenceInDays,
-} from "date-fns";
-import { cn } from "@/lib/utils";
-import DatePicker from "react-datepicker";
-import { toast } from "sonner";
-
-// Helper to group tasks by project
-const groupTasksByProject = (tasks: ProjectTask[]) => {
-  return tasks.reduce((acc, task) => {
-    if (!acc[task.projectName]) {
-      acc[task.projectName] = [];
-    }
-    acc[task.projectName].push(task);
-    return acc;
-  }, {} as Record<string, ProjectTask[]>);
-};
-
-// Form data interface
-interface TaskFormData {
-  projectName: string;
-  taskName: string;
-  startDate: Date;
-  endDate: Date;
+interface ProjectTask {
+  _id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
   progress: number;
-  assignedTo: string;
-  color: string;
+  type: 'task' | 'milestone';
+  userId: string;
 }
 
-const initialFormData: TaskFormData = {
-  projectName: "",
-  taskName: "",
-  startDate: new Date(),
-  endDate: addDays(new Date(), 7),
-  progress: 0,
-  assignedTo: "",
-  color: "#2196F3",
-};
+interface GanttTask extends Task {
+  id: string;
+  name: string;
+  start: Date;
+  end: Date;
+  progress: number;
+  type: 'task' | 'milestone';
+}
 
 const GanttChart = () => {
-  const { tasks, isLoading, error } = useProjectTasks();
-  const [isClient, setIsClient] = useState(false);
-  const [formData, setFormData] = useState<TaskFormData>(initialFormData);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [tasks, setTasks] = useState<GanttTask[]>([]);
+  const [newTask, setNewTask] = useState({
+    name: '',
+    startDate: '',
+    endDate: '',
+    progress: 0,
+    type: 'task' as 'task' | 'milestone',
+  });
+  const [editTask, setEditTask] = useState<GanttTask | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Handle client-side rendering
   useEffect(() => {
-    setIsClient(true);
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+      fetchTasks(storedToken);
+    } else {
+      setError('Please log in to view tasks');
+    }
   }, []);
 
-  // Only render on client
-  if (!isClient) return null;
-
-  // Show loading state
-  if (isLoading)
-    return (
-      <div className="h-60 flex items-center justify-center">
-        Loading project tasks...
-      </div>
-    );
-
-  // Show error
-  if (error)
-    return (
-      <Alert
-        title={`Error loading project tasks: ${error}`}
-        iconUrl="/assets/no-calls.svg"
-      />
-    );
-
-  // If no tasks, show empty state
-  if (!tasks || tasks.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-4">
-        <Alert title="No project tasks found" iconUrl="/assets/no-calls.svg" />
-        <AddTaskDialog
-          formData={formData}
-          setFormData={setFormData}
-          open={dialogOpen}
-          setOpen={setDialogOpen}
-        />
-      </div>
-    );
-  }
-
-  // Group tasks by project
-  const projectGroups = groupTasksByProject(tasks);
-
-  // Find date range for all tasks
-  const allDates = tasks.flatMap((task) => [
-    new Date(task.startDate),
-    new Date(task.endDate),
-  ]);
-  const minDate = new Date(Math.min(...allDates.map((d) => d.getTime())));
-  const maxDate = new Date(Math.max(...allDates.map((d) => d.getTime())));
-
-  // Ensure we show at least 14 days
-  const endDate = new Date(
-    Math.max(maxDate.getTime(), addDays(minDate, 14).getTime())
-  );
-
-  // Generate date headers
-  const dateRange = eachDayOfInterval({ start: minDate, end: endDate });
-
-  return (
-    <div className="flex flex-col space-y-4">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-xl font-bold">Project Timeline</h2>
-        <AddTaskDialog
-          formData={formData}
-          setFormData={setFormData}
-          open={dialogOpen}
-          setOpen={setDialogOpen}
-        />
-      </div>
-
-      <div className="bg-white rounded-xl shadow overflow-x-auto">
-        {/* Header with dates */}
-        <div className="flex min-w-max">
-          <div className="w-48 flex-shrink-0 border-r border-gray-200 p-2 font-semibold">
-            Project / Task
-          </div>
-          <div className="flex flex-1">
-            {dateRange.map((date) => (
-              <div
-                key={date.toISOString()}
-                className="w-16 flex-shrink-0 text-center border-r border-gray-200 p-2 text-xs"
-              >
-                {format(date, "MMM d")}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Projects and tasks */}
-        {Object.entries(projectGroups).map(([projectName, projectTasks]) => (
-          <div key={projectName} className="border-t border-gray-200">
-            {/* Project row */}
-            <div className="flex min-w-max bg-gray-50">
-              <div className="w-48 flex-shrink-0 border-r border-gray-200 p-2 font-semibold">
-                {projectName}
-              </div>
-              <div className="flex flex-1 h-8"></div>
-            </div>
-
-            {/* Task rows */}
-            {projectTasks.map((task) => {
-              const startDate = new Date(task.startDate);
-              const endDate = new Date(task.endDate);
-              const startOffset = differenceInDays(startDate, minDate);
-              const duration = differenceInDays(endDate, startDate) + 1;
-
-              return (
-                <div key={task._id} className="flex min-w-max hover:bg-blue-50">
-                  <div className="w-48 flex-shrink-0 border-r border-gray-200 p-2 pl-6 text-sm">
-                    {task.taskName}
-                  </div>
-                  <div className="flex flex-1 relative h-10 items-center">
-                    <div
-                      className="absolute h-6 rounded-md flex items-center justify-between px-2 text-white text-xs"
-                      style={{
-                        left: `${startOffset * 64}px`,
-                        width: `${duration * 64}px`,
-                        backgroundColor: task.color || "#2196F3",
-                      }}
-                    >
-                      <span className="truncate max-w-[100px]">
-                        {task.taskName}
-                      </span>
-                      <span>{task.progress}%</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Dialog component for adding new tasks
-const AddTaskDialog = ({
-  formData,
-  setFormData,
-  open,
-  setOpen,
-}: {
-  formData: TaskFormData;
-  setFormData: React.Dispatch<React.SetStateAction<TaskFormData>>;
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-}) => {
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const fetchTasks = async (authToken: string) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Not authenticated");
-      }
-
-      const response = await fetch("/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
+      const response = await axios.get('/api/tasks', {
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to create task");
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("Task created successfully");
-        setFormData(initialFormData);
-        setOpen(false);
-
-        // Reload page to refresh tasks
-        window.location.reload();
+      if (response.data.success) {
+        const ganttTasks: GanttTask[] = response.data.tasks.map((task: ProjectTask) => ({
+          id: task._id,
+          name: task.name,
+          start: new Date(task.startDate),
+          end: new Date(task.endDate),
+          progress: task.progress,
+          type: task.type as 'task' | 'milestone',
+        }));
+        setTasks(ganttTasks);
       } else {
-        throw new Error(data.message || "Failed to create task");
+        setError(response.data.message);
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create task");
+    } catch (err) {
+      setError('Failed to fetch tasks');
+    }
+  };
+
+  const addTask = async () => {
+    if (!token) {
+      setError('Please log in to add tasks');
+      return;
+    }
+    try {
+      const response = await axios.post('/api/tasks', newTask, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setNewTask({ name: '', startDate: '', endDate: '', progress: 0, type: 'task' });
+        setIsModalOpen(false);
+        fetchTasks(token);
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      setError('Failed to add task');
+    }
+  };
+
+  const updateTask = async () => {
+    if (!token || !editTask) {
+      setError('Please log in to update tasks');
+      return;
+    }
+    try {
+      const response = await axios.patch(
+        `/api/tasks/${editTask.id}`,
+        {
+          name: editTask.name,
+          startDate: editTask.start.toISOString().split('T')[0],
+          endDate: editTask.end.toISOString().split('T')[0],
+          progress: editTask.progress,
+          type: editTask.type,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (response.data.success) {
+        setEditTask(null);
+        setIsModalOpen(false);
+        fetchTasks(token);
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      setError('Failed to update task');
+    }
+  };
+
+  const openAddModal = () => {
+    setEditTask(null);
+    setNewTask({ name: '', startDate: '', endDate: '', progress: 0, type: 'task' });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (task: GanttTask) => {
+    setEditTask(task);
+    setNewTask({
+      name: task.name,
+      startDate: task.start.toISOString().split('T')[0],
+      endDate: task.end.toISOString().split('T')[0],
+      progress: task.progress,
+      type: task.type,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleModalSubmit = () => {
+    if (editTask) {
+      updateTask();
+    } else {
+      addTask();
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!token) {
+      setError('Please log in to delete tasks');
+      return;
+    }
+    try {
+      const response = await axios.delete(`/api/tasks/${taskId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        fetchTasks(token);
+      } else {
+        setError(response.data.message);
+      }
+    }
+    catch (err) {
+      setError('Failed to delete task');
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">Add New Task</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold mb-4">
-            Add New Project Task
-          </DialogTitle>
-        </DialogHeader>
+    <div className="p-4 max-w-6xl mx-auto bg-white shadow-lg rounded-lg mt-10 mb-10 py-10 px-10 border-1">
+      <h1 className="text-2xl font-bold mb-4">Gantt Chart</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <button
+        onClick={openAddModal}
+        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+      >
+        Add Task/Milestone
+      </button>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Project Name</label>
-              <Input
-                value={formData.projectName}
-                onChange={(e) =>
-                  setFormData({ ...formData, projectName: e.target.value })
-                }
-                required
+      {isModalOpen && (
+      <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white border-1 shadow-md backdrop-blur-sm p-6 rounded-lg w-96 ">
+            <h2 className="text-xl font-bold mb-4">
+              {editTask ? 'Edit Task/Milestone' : 'Add Task/Milestone'}
+            </h2>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Task Name"
+                value={newTask.name}
+                onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                className="border p-2 w-full"
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Task Name</label>
-              <Input
-                value={formData.taskName}
-                onChange={(e) =>
-                  setFormData({ ...formData, taskName: e.target.value })
-                }
-                required
+              <input
+                type="date"
+                value={newTask.startDate}
+                onChange={(e) => setNewTask({ ...newTask, startDate: e.target.value })}
+                className="border p-2 w-full"
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Start Date</label>
-              <DatePicker
-                selected={formData.startDate}
-                onChange={(date) =>
-                  setFormData({ ...formData, startDate: date || new Date() })
-                }
-                className="w-full rounded-md border border-input p-2"
-                dateFormat="MMMM d, yyyy"
+              <input
+                type="date"
+                value={newTask.endDate}
+                onChange={(e) => setNewTask({ ...newTask, endDate: e.target.value })}
+                className="border p-2 w-full"
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">End Date</label>
-              <DatePicker
-                selected={formData.endDate}
-                onChange={(date) =>
-                  setFormData({
-                    ...formData,
-                    endDate: date || addDays(new Date(), 1),
-                  })
-                }
-                className="w-full rounded-md border border-input p-2"
-                dateFormat="MMMM d, yyyy"
-                minDate={formData.startDate}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Progress (%)</label>
-              <Input
+              <input
                 type="number"
-                min="0"
-                max="100"
-                value={formData.progress}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    progress: parseInt(e.target.value) || 0,
-                  })
-                }
+                placeholder="Progress %"
+                value={newTask.progress}
+                onChange={(e) => setNewTask({ ...newTask, progress: parseInt(e.target.value) })}
+                className="border p-2 w-full"
+                disabled={newTask.type === 'milestone'}
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Assigned To</label>
-              <Input
-                value={formData.assignedTo}
+              <select
+                value={newTask.type}
                 onChange={(e) =>
-                  setFormData({ ...formData, assignedTo: e.target.value })
+                  setNewTask({ ...newTask, type: e.target.value as 'task' | 'milestone' })
                 }
-              />
+                className="border p-2 w-full"
+              >
+                <option value="task">Task</option>
+                <option value="milestone">Milestone</option>
+              </select>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={formData.color}
-                  onChange={(e) =>
-                    setFormData({ ...formData, color: e.target.value })
-                  }
-                  className="w-10 h-10 rounded cursor-pointer"
-                />
-                <Input
-                  value={formData.color}
-                  onChange={(e) =>
-                    setFormData({ ...formData, color: e.target.value })
-                  }
-                />
-              </div>
+            <div className="flex justify-end space-x-2 mt-4">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="bg-gray-300 px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleModalSubmit}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+              >
+                {editTask ? 'Update' : 'Add'}
+              </button>
+              <button
+                onClick={() => {
+                  if (editTask) deleteTask(editTask.id);
+                }}
+                className="bg-red-500 text-white px-4 py-2 rounded"
+              >
+                Delete
+              </button>
             </div>
           </div>
+        </div>
+      )}
+      
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-              Add Task
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      {tasks.length > 0 ? (
+        <Gantt
+          tasks={tasks}
+          viewMode={ViewMode.Day}
+          columnWidth={60}
+          listCellWidth="200px"
+          barCornerRadius={3}
+          barProgressColor="#4caf50"
+          barBackgroundColor="#2196f3"
+          milestoneBackgroundColor="#f44336"
+          onClick={(task) =>
+            openEditModal({
+              id: task.id,
+              name: task.name,
+              start: task.start,
+              end: task.end,
+              progress: task.progress,
+              type: task.type as 'task' | 'milestone',
+            })
+          }
+        />
+      ) : (
+        <p>No tasks available</p>
+      )}
+    </div>
   );
 };
 

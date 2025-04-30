@@ -6,6 +6,7 @@ import { navLinks } from "@/constants";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext"; // Import useAuth hook
+import DateAndTime from "./DateAndTime";
 
 const NavBar = () => {
   const pathname = usePathname();
@@ -107,7 +108,8 @@ const NavBar = () => {
         </section>
 
         {/* User button */}
-        <div className="relative">
+        <div className="relative flex gap-6 items-center">
+          <DateAndTime />
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-300 focus:outline-none focus:border-blue-500"

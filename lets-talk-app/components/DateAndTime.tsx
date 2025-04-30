@@ -25,9 +25,9 @@ const DateAndTime = () => {
         return () => clearInterval(intervalId); // Clean up on component unmount
       }, []);
     return (
-        <div className="flex flex-col gap-5">
-            <h1 className="text-4xl font-extrabold lg:text-7xl">{time}</h1>
-            <p className="text-lg font-medium text-sky-1 lg:text-2xl">{date}</p>
+        <div className="flex flex-col">
+            <h1 className="text-xl font-extrabold ">{time}</h1>
+            <p className="text-lg font-medium text-sky-1 ">{date}</p>
         </div>
     )
 }

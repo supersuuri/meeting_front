@@ -5,8 +5,13 @@ import GanttChart from "@/components/GanttChart";
 const HomePage = () => {
   return (
     <section className="flex size-full flex-row gap-10 animate-fade-in mt-10">
-      <MainMenu />
-      <GanttChart />
+        <div className="">
+            <MainMenu />
+        </div>
+        <div className="flex flex-col gap-10 w-3/4">
+            {/* <StatusBar /> */}
+            <GanttChart />
+        </div>
     </section>
   );
 };
