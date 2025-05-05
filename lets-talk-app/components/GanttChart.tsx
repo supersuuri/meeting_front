@@ -112,6 +112,7 @@ const GanttChart = () => {
       if (response.data.success) {
         setEditTask(null);
         setIsModalOpen(false);
+        // Fetch tasks after update, only if update was successful
         fetchTasks(token);
       } else {
         setError(response.data.message);
@@ -120,7 +121,28 @@ const GanttChart = () => {
       setError('Failed to update task');
     }
   };
-
+  
+  const deleteTask = async (taskId: string) => {
+    if (!token) {
+      setError('Please log in to delete tasks');
+      return;
+    }
+    try {
+      const response = await axios.delete(`/api/tasks/${taskId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        // Fetch tasks after deletion, only if deletion was successful
+        fetchTasks(token);
+        setIsModalOpen(false); // Close the modal after deletion
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      setError('Failed to delete task');
+    }
+  };
+  
   const openAddModal = () => {
     setEditTask(null);
     setNewTask({ name: '', startDate: '', endDate: '', progress: 0, type: 'task' });
@@ -147,28 +169,8 @@ const GanttChart = () => {
     }
   };
 
-  const deleteTask = async (taskId: string) => {
-    if (!token) {
-      setError('Please log in to delete tasks');
-      return;
-    }
-    try {
-      const response = await axios.delete(`/api/tasks/${taskId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.data.success) {
-        fetchTasks(token);
-      } else {
-        setError(response.data.message);
-      }
-    }
-    catch (err) {
-      setError('Failed to delete task');
-    }
-  };
-
   return (
-    <div className="p-4 max-w-6xl mx-auto bg-white shadow-lg rounded-lg mt-10 mb-10 py-10 px-10 border-1">
+    <div className="p-4 max-w-6xl w-full mx-auto bg-white shadow-lg rounded-lg mt-10 mb-10 py-10 px-10 border-1">
       <h1 className="text-2xl font-bold mb-4">Gantt Chart</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <button
@@ -182,36 +184,9 @@ const GanttChart = () => {
       <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white border-1 shadow-md backdrop-blur-sm p-6 rounded-lg w-96 ">
             <h2 className="text-xl font-bold mb-4">
-              {editTask ? 'Edit Task/Milestone' : 'Add Task/Milestone'}
+              {editTask ? 'Edit Task / Milestone' : 'Add Task / Milestone'}
             </h2>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Task Name"
-                value={newTask.name}
-                onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-                className="border p-2 w-full"
-              />
-              <input
-                type="date"
-                value={newTask.startDate}
-                onChange={(e) => setNewTask({ ...newTask, startDate: e.target.value })}
-                className="border p-2 w-full"
-              />
-              <input
-                type="date"
-                value={newTask.endDate}
-                onChange={(e) => setNewTask({ ...newTask, endDate: e.target.value })}
-                className="border p-2 w-full"
-              />
-              <input
-                type="number"
-                placeholder="Progress %"
-                value={newTask.progress}
-                onChange={(e) => setNewTask({ ...newTask, progress: parseInt(e.target.value) })}
-                className="border p-2 w-full"
-                disabled={newTask.type === 'milestone'}
-              />
               <select
                 value={newTask.type}
                 onChange={(e) =>
@@ -222,6 +197,54 @@ const GanttChart = () => {
                 <option value="task">Task</option>
                 <option value="milestone">Milestone</option>
               </select>
+              {
+                newTask.type === 'milestone' ? (
+                  <>
+                  <input
+                    type="text"
+                    placeholder="Task Name"
+                    value={newTask.name}
+                    onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                    className="border p-2 w-full"
+                  />
+                  <input
+                    type="date"
+                    value={newTask.startDate}
+                    onChange={(e) => {
+                      const newStartDate = e.target.value;
+                      setNewTask({ 
+                        ...newTask, 
+                        startDate: newStartDate,
+                        endDate: newStartDate // Set endDate to the same value as startDate
+                      });
+                    }}
+                    className="border p-2 w-full"
+                  />
+                </>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Task Name"
+                      value={newTask.name}
+                      onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                      className="border p-2 w-full"
+                    />
+                    <input
+                      type="date"
+                      value={newTask.startDate}
+                      onChange={(e) => setNewTask({ ...newTask, startDate: e.target.value })}
+                      className="border p-2 w-full"
+                    />
+                    <input
+                      type="date"
+                      value={newTask.endDate}
+                      onChange={(e) => setNewTask({ ...newTask, endDate: e.target.value })}
+                      className="border p-2 w-full"
+                    />
+                  </>
+                )
+              }
             </div>
             <div className="flex justify-end space-x-2 mt-4">
               <button

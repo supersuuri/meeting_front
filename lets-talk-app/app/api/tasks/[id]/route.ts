@@ -4,7 +4,8 @@ import ProjectTask from '@/models/ProjectTask';
 import { verifyToken } from '@/lib/auth';
 
 // DELETE handler
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   // eslint-disable-next-line @next/next/no-sync-dynamic-apis
   const { id } = params;
   try {
@@ -30,7 +31,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 }
 
 // PATCH handler
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   // eslint-disable-next-line @next/next/no-sync-dynamic-apis
   const { id } = params;
   try {
