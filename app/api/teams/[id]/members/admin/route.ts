@@ -9,8 +9,10 @@ export const runtime = "nodejs";
 // Add member as admin
 export async function POST(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
   try {
     const body = await request.json();
     const { memberId } = body;
@@ -26,7 +28,7 @@ export async function POST(
 
     await connectToDatabase();
     const db = (global as any).mongo.db;
-    const teamId = context.params.id;
+    const teamId = id;
 
     const team = await db.collection("teams").findOne({
       _id: new ObjectId(teamId),
@@ -73,8 +75,9 @@ export async function POST(
 // Remove member from admin role
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const body = await request.json();
     const { memberId } = body;
@@ -90,7 +93,7 @@ export async function DELETE(
 
     await connectToDatabase();
     const db = (global as any).mongo.db;
-    const teamId = context.params.id;
+    const teamId = id;
 
     const team = await db.collection("teams").findOne({
       _id: new ObjectId(teamId),

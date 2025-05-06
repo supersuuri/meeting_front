@@ -2,9 +2,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import User from "@/models/User";
-import jwt from "jsonwebtoken";
+import { verifyToken } from "@/lib/jwt";
 
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
+
   try {
     // Get token from authorization header
     const authHeader = req.headers.get("authorization");
@@ -18,10 +24,7 @@ export async function GET(req: NextRequest) {
     const token = authHeader.split(" ")[1];
 
     // Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "your-secret-key"
-    ) as { id: string };
+    const decoded = verifyToken(token) as { id: string };
 
     await connectToDatabase();
     const user = await User.findById(decoded.id);
