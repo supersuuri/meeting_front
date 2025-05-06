@@ -170,7 +170,7 @@ const GanttChart = () => {
   };
 
   return (
-    <div className="p-4 max-w-6xl w-full mx-auto bg-white shadow-lg rounded-lg mt-10 mb-10 py-10 px-10 border-1">
+    <div className="p-4 max-w-6xl w-full mx-auto bg-white shadow-lg rounded-lg mt-1 py-10 px-10 border-1">
       <h1 className="text-2xl font-bold mb-4">Gantt Chart</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <button
