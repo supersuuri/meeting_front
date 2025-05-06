@@ -67,8 +67,8 @@ const NavBar = () => {
           className="flex items-center gap-1 hover:scale-150 duration-500 "
         >
           <Image
-            src="/assets/logo.svg"
-            width={60}
+            src="/assets/logo.png"
+            width={100}
             height={60}
             alt="Let's talk"
           />
@@ -134,7 +134,7 @@ const NavBar = () => {
 
           {/* Profile Sidebar */}
           {isOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+            <div className="absolute right-0 mt-36 w-48 bg-white rounded-md shadow-lg py-1 z-50">
               <Link href="/profile">
                 <button className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
                   <div className="flex items-center">
