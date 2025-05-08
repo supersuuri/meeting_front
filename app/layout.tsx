@@ -1,4 +1,3 @@
-// app/layout.tsx
 import "react-datepicker/dist/react-datepicker.css";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -8,6 +7,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import SessionClientProvider from "@/components/SessionProvider"; // Make sure this path matches your file
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +35,7 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          {children}
+          <SessionClientProvider>{children}</SessionClientProvider>
           <Toaster />
           <Analytics />
           <SpeedInsights />

@@ -29,10 +29,10 @@ export async function POST(req: NextRequest) {
 
     // Create token
     const token = jwt.sign(
-      { id: user._id },
+      { id: user._id }, // Remove iat here
       process.env.JWT_SECRET || "your-secret-key",
       {
-        expiresIn: "30d",
+        expiresIn: "1h",
       }
     );
 
