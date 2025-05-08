@@ -1,0 +1,9 @@
+# auto-detect text files and normalize them to LF in the repo
+* text=auto
+
+# force specific filetypes to always use LF in the working copy
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.css   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf

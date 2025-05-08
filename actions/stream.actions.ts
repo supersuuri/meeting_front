@@ -34,12 +34,18 @@ export const tokenProvider = async () => {
     const userId = user.id;
 
     const validity = 60 * 60;
+    const now = Math.floor(Date.now() / 1000);
+    const skew = 30; // client/server clock‐skew buffer
 
-    const streamToken = client.generateUserToken({
-      user_id: userId,
-      validity_in_seconds: validity,
-      // Remove issued_at_time parameter
-    });
+    // manually sign so iat = now - skew, exp = now + validity
+    const streamToken = jwt.sign(
+      {
+        user_id: userId,
+        iat: now - skew,
+        exp: now + validity,
+      },
+      streamSecretKey
+    );
 
     return streamToken;
   } catch (error) {
