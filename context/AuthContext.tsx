@@ -16,6 +16,7 @@ type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
@@ -33,6 +34,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   isAuthenticated: false,
+  token: null,
   login: async () => {},
   register: async () => {},
   logout: () => {},
@@ -42,6 +44,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -50,28 +53,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkUserLoggedIn = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
+        const stored = localStorage.getItem("token");
+        if (stored) {
+          setToken(stored);
+          const response = await fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${stored}`,
+            },
+          });
 
-        const response = await fetch("/api/auth/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-          setIsAuthenticated(true);
-        } else {
-          localStorage.removeItem("token");
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data.user);
+            setIsAuthenticated(true);
+          } else {
+            localStorage.removeItem("token");
+            setToken(null);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch user:", error);
         localStorage.removeItem("token");
+        setToken(null);
       } finally {
         setIsLoading(false);
       }
@@ -80,7 +83,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkUserLoggedIn();
   }, []);
 
-  // context/AuthContext.tsx modifications
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
@@ -100,6 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Store token in both cookie and localStorage for compatibility
       localStorage.setItem("token", data.token);
+      setToken(data.token);
 
       setUser(data.user);
       setIsAuthenticated(true);
@@ -140,6 +143,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     localStorage.removeItem("token");
+    setToken(null);
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -150,6 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user,
         isLoading,
         isAuthenticated,
+        token,
         login,
         register,
         logout,

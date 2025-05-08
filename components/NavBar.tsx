@@ -78,9 +78,10 @@ const NavBar = () => {
         <section className="sticky top-0 flex justify-between text-black ">
           <div className="flex flex-1 max-sm:gap-0 sm:gap-6">
             {navLinks.map((item) => {
-              const isActive =
+              const isActive = !!(
                 pathname === item.route ||
-                pathname.startsWith(`${item.route}/`);
+                pathname?.startsWith(`${item.route}/`)
+              );
 
               return (
                 <Link

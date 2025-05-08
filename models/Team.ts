@@ -4,8 +4,8 @@ const TeamSchema = new Schema(
   {
     name: { type: String, required: true },
     description: { type: String },
-    owner: { type: String, required: true }, // Owner's user ID
-    members: [{ type: String }], // Array of member user IDs
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Changed type and added ref
+    members: [{ type: Schema.Types.ObjectId, ref: "User" }], // Changed type and added ref
   },
   { timestamps: true }
 );

@@ -11,7 +11,7 @@ export default function TeamGanttPage() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const params = useParams();
-  const teamId = params.id as string;
+  const teamId = params?.id as string | undefined;
   const [teamName, setTeamName] = useState("");
   const [isLoadingTeam, setIsLoadingTeam] = useState(true);
 
@@ -23,7 +23,12 @@ export default function TeamGanttPage() {
 
   useEffect(() => {
     const fetchTeam = async () => {
-      if (!teamId || !user) return;
+      if (!teamId || !user) {
+        if (!isLoading && teamId === undefined) {
+          router.push("/teams");
+        }
+        return;
+      }
 
       try {
         const token = localStorage.getItem("token");
@@ -44,9 +49,9 @@ export default function TeamGanttPage() {
     };
 
     fetchTeam();
-  }, [teamId, user, router]);
+  }, [teamId, user, router, isLoading]);
 
-  if (isLoading || isLoadingTeam) return <Loading />;
+  if (isLoading || isLoadingTeam || !teamId) return <Loading />;
 
   return (
     <div className="animate-fade-in">

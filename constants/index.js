@@ -21,12 +21,7 @@ export const navLinks = [
     label: "Recordings",
   },
   {
-    imgURL: "/assets/my-room.svg",
-    route: "/my-room",
-    label: "My Room",
-  },
-  {
-    imgURL: "/assets/teams.svg",
+    imgURL: "/assets/teams.png",
     route: "/teams",
     label: "Teams",
   },

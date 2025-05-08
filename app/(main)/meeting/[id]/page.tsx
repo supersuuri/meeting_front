@@ -11,8 +11,20 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 const MeetingPage = () => {
-  const { id } = useParams<{ id: string }>();
-  if (!id) return;
+  const params = useParams<{ id: string }>(); // Get the params object
+
+  // Check if params or params.id is missing
+  if (!params?.id) {
+    // Return a loading state or an error message.
+    // You might want to use your <Loading /> component or a specific message.
+    return (
+      <p className="text-center text-3xl font-bold text-white">
+        Meeting ID not available.
+      </p>
+    );
+  }
+  const { id } = params; // Now it's safe to destructure id
+
   const { isLoading, user } = useAuth();
   const { call, isCallLoading } = useGetCallById(id);
   const [isSetupComplete, setIsSetupComplete] = useState(false);

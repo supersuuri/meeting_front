@@ -5,271 +5,107 @@ import User from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 import mongoose from "mongoose";
 
-// Add member to team
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const resolvedParams = await params;
-    const { id: teamId } = resolvedParams;
-
-    // Authenticate the request
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { success: false, message: "Not authorized" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded = await verifyToken(token);
-
-    if (!decoded || !decoded.id) {
-      return NextResponse.json(
-        { success: false, message: "Invalid token" },
-        { status: 401 }
-      );
-    }
-
-    await connectToDatabase();
-    const db = mongoose.connection.db;
-    if (!db) {
-      throw new Error("Database connection failed");
-    }
-
-    // Now you can safely use db
-    const team = await db.collection("teams").findOne({
-      _id: new mongoose.Types.ObjectId(teamId),
-    });
-
-    // Get request body
-    const { userId } = await req.json();
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, message: "User ID is required" },
-        { status: 400 }
-      );
-    }
-
-    // Check if team exists and the requester is the owner or an admin
-    if (!team) {
-      return NextResponse.json(
-        { success: false, message: "Team not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if user has permission to add members
-    const isOwner = team.ownerId.toString() === decoded.id;
-    const isAdmin =
-      team.admins &&
-      team.admins.some(
-        (adminId: mongoose.Types.ObjectId) => adminId.toString() === decoded.id
-      );
-
-    if (!isOwner && !isAdmin) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Not authorized to add members to this team",
-        },
-        { status: 403 }
-      );
-    }
-
-    // Check if the user exists
-    const user = await db.collection("users").findOne({
-      _id: new mongoose.Types.ObjectId(userId),
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if user is already a member
-    if (
-      team.members &&
-      team.members.some(
-        (memberId: mongoose.Types.ObjectId) => memberId.toString() === userId
-      )
-    ) {
-      return NextResponse.json(
-        { success: false, message: "User is already a member of this team" },
-        { status: 400 }
-      );
-    }
-
-    // Add user to team members
-    await db
-      .collection("teams")
-      .updateOne(
-        { _id: new mongoose.Types.ObjectId(teamId) },
-        { $addToSet: { members: new mongoose.Types.ObjectId(userId) } }
-      );
-
-    return NextResponse.json({
-      success: true,
-      message: "Team member added successfully",
-    });
-  } catch (error) {
-    console.error("Error adding team member:", error);
-    return NextResponse.json(
-      { success: false, message: "Server error" },
-      { status: 500 }
-    );
-  }
+async function requireUser(req: NextRequest) {
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) throw new Error("Not authorized");
+  const decoded = await verifyToken(auth.split(" ")[1]);
+  if (!decoded?.id) throw new Error("Invalid token");
+  return decoded.id;
 }
 
-// Remove member from team
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
-
-  try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { success: false, message: "Not authorized" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded = await verifyToken(token);
-
-    if (!decoded || !decoded.id) {
-      return NextResponse.json(
-        { success: false, message: "Invalid token" },
-        { status: 401 }
-      );
-    }
-
-    await connectToDatabase();
-
-    // Find the team
-    const team = await Team.findById(id);
-
-    if (!team) {
-      return NextResponse.json(
-        { success: false, message: "Team not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if requester is the owner
-    if (team.owner !== decoded.id) {
-      return NextResponse.json(
-        { success: false, message: "Only the team owner can remove members" },
-        { status: 403 }
-      );
-    }
-
-    const { userId } = await req.json();
-
-    // Cannot remove the owner from members
-    if (userId === team.owner) {
-      return NextResponse.json(
-        { success: false, message: "Cannot remove the team owner" },
-        { status: 400 }
-      );
-    }
-
-    // Remove member
-    team.members = team.members.filter(
-      (memberId: string) => memberId !== userId
-    );
-    await team.save();
-
-    return NextResponse.json({ success: true, team });
-  } catch (error) {
-    console.error("Error removing team member:", error);
-    return NextResponse.json(
-      { success: false, message: "Server error" },
-      { status: 500 }
-    );
-  }
-}
-
-// Get team members
 export async function GET(
-  request: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
+  const token = req.headers.get("authorization")?.split(" ")[1] || "";
+  const decodedToken = await verifyToken(token);
+
+  if (!decodedToken || !decodedToken.id) {
+    return NextResponse.json({ message: "Not authorized" }, { status: 401 });
+  }
+  const userId = decodedToken.id; // Use the id from the validated token
+
+  const { id } = await params; // Await params here
 
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { success: false, message: "Not authorized" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded = await verifyToken(token);
-
-    if (!decoded || !decoded.id) {
-      return NextResponse.json(
-        { success: false, message: "Invalid token" },
-        { status: 401 }
-      );
-    }
-
     await connectToDatabase();
-
-    // Check if user is a member of the team (not just the owner)
+    // Validate the id
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { message: "Invalid or missing team ID" },
+        { status: 400 }
+      );
+    }
     const team = await Team.findOne({
       _id: id,
-      $or: [{ owner: decoded.id }, { members: decoded.id }],
-    });
+      $or: [{ owner: userId }, { members: userId }],
+    }).populate("members", "email");
+    if (!team)
+      return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-    if (!team) {
-      return NextResponse.json(
-        { success: false, message: "Team not found or you are not a member" },
-        { status: 404 }
-      );
-    }
-
-    // Get team members with user details
-    const members = await User.find(
-      { _id: { $in: team.members } },
-      { password: 0 } // Exclude password field
-    );
-
-    // Add owner to the list if not already included
-    const ownerIncluded = members.some(
-      (member) => member._id.toString() === team.owner.toString()
-    );
-
-    let allMembers = [...members];
-    if (!ownerIncluded) {
-      const owner = await User.findById(team.owner, { password: 0 });
-      if (owner) {
-        allMembers.unshift(owner);
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      members: allMembers,
-      owner: team.owner,
-    });
+    console.log(
+      "Server: Returning members data:",
+      JSON.stringify({ members: team.members }, null, 2)
+    ); // <--- Add this log
+    return NextResponse.json({ members: team.members });
   } catch (error) {
-    console.error("Error fetching team members:", error);
+    console.error(error);
     return NextResponse.json(
-      { success: false, message: "Server error" },
+      { message: "Internal Server Error" },
       { status: 500 }
     );
+  }
+}
+
+export async function POST(
+  req: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const userId = await requireUser(req);
+    const { email } = await req.json();
+    const { id: teamId } = await paramsPromise; // Await paramsPromise here
+    await connectToDatabase();
+    const user = await User.findOne({ email });
+    if (!user)
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    const team = await Team.findById(teamId);
+    if (!team || team.owner.toString() !== userId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    if (team.members.includes(user._id)) {
+      return NextResponse.json(
+        { message: "Already a member" },
+        { status: 400 }
+      );
+    }
+    team.members.push(user._id);
+    await team.save();
+    return NextResponse.json({ message: "Member added" });
+  } catch (e: any) {
+    return NextResponse.json({ message: e.message }, { status: 401 });
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const userId = await requireUser(req);
+    const { memberId } = await req.json();
+    const { id: teamId } = await paramsPromise; // Await paramsPromise here
+    await connectToDatabase();
+    const team = await Team.findById(teamId);
+    if (!team || team.owner.toString() !== userId) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    team.members = team.members.filter(
+      (m: string) => m.toString() !== memberId
+    );
+    await team.save();
+    return NextResponse.json({ message: "Member removed" });
+  } catch (e: any) {
+    return NextResponse.json({ message: e.message }, { status: 401 });
   }
 }
