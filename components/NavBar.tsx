@@ -60,7 +60,7 @@ const NavBar = () => {
 
   return (
     <>
-      <nav className="flex justify-between items-center fixed z-50 w-full h-28 bg-gray-200 px-10 gap-4 shadow-2xl">
+      <nav className="flex justify-between items-center fixed z-50 w-full h-28 bg-gray-200 px-10 gap-4 shadow-xl">
         {/* Logo */}
         <Link
           href="/"

@@ -38,7 +38,7 @@ export async function GET(
     }
     const team = await Team.findOne({
       _id: id,
-      $or: [{ owner: userId }, { members: userId }],
+      $or: [{ admin: userId }, { members: userId }],
     }).populate("members", "email");
     if (!team)
       return NextResponse.json({ message: "Not found" }, { status: 404 });
@@ -70,7 +70,7 @@ export async function POST(
     if (!user)
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     const team = await Team.findById(teamId);
-    if (!team || team.owner.toString() !== userId) {
+    if (!team || team.admin.toString() !== userId) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     if (team.members.includes(user._id)) {
@@ -97,7 +97,7 @@ export async function DELETE(
     const { id: teamId } = await paramsPromise; // Await paramsPromise here
     await connectToDatabase();
     const team = await Team.findById(teamId);
-    if (!team || team.owner.toString() !== userId) {
+    if (!team || team.admin.toString() !== userId) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     team.members = team.members.filter(

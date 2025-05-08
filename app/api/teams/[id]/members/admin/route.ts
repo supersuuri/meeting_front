@@ -41,10 +41,10 @@ export async function POST(
       );
     }
 
-    // Only team owner can add admins
-    if (team.ownerId.toString() !== decoded.id) {
+    // Only team admin can add admins
+    if (team.adminId.toString() !== decoded.id) {
       return NextResponse.json(
-        { success: false, message: "Only team owner can manage admin roles" },
+        { success: false, message: "Only team admin can manage admin roles" },
         { status: 403 }
       );
     }
@@ -54,9 +54,12 @@ export async function POST(
       .collection("teams")
       .findOneAndUpdate(
         { _id: new ObjectId(teamId) },
-        { $addToSet: { admins: new ObjectId(memberId) } },
+        { $set: { name: body.name, description: body.description } },
         { returnDocument: "after" }
       );
+    if (!updatedTeam.value)
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(updatedTeam.value);
 
     return NextResponse.json({
       success: true,
@@ -106,10 +109,10 @@ export async function DELETE(
       );
     }
 
-    // Only team owner can remove admins
-    if (team.ownerId.toString() !== decoded.id) {
+    // Only team admin can remove admins
+    if (team.adminId.toString() !== decoded.id) {
       return NextResponse.json(
-        { success: false, message: "Only team owner can manage admin roles" },
+        { success: false, message: "Only team admin can manage admin roles" },
         { status: 403 }
       );
     }
