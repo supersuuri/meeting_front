@@ -26,11 +26,11 @@ export async function GET(req: NextRequest) {
 
     // Get search parameter
     const searchParams = req.nextUrl.searchParams;
-    const query = searchParams.get("query");
+    const query = searchParams.get("email");
 
-    if (!query) {
+    if (!query || query.length < 2) {
       return NextResponse.json(
-        { success: false, message: "Search query is required" },
+        { error: "Missing or invalid email query" },
         { status: 400 }
       );
     }
@@ -38,10 +38,9 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
 
     // Search for users with email that matches the query (case insensitive)
-    const users = await User.find(
-      { email: { $regex: query, $options: "i" } },
-      "email username firstName lastName imageUrl"
-    ).limit(5);
+    const users = await User.find({
+      email: { $regex: query, $options: "i" },
+    }).select("email username firstName lastName imageUrl");
 
     return NextResponse.json({
       success: true,

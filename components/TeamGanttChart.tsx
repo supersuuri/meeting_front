@@ -121,6 +121,9 @@ const TeamGanttChart = ({ teamId }: TeamGanttChartProps) => {
       setError("Please log in to add tasks");
       return;
     }
+    // Prevent double submission
+    if (addTask.loading) return;
+    addTask.loading = true;
     try {
       const response = await axios.post(`/api/teams/${teamId}/tasks`, newTask, {
         headers: { Authorization: `Bearer ${token}` },
@@ -135,15 +138,19 @@ const TeamGanttChart = ({ teamId }: TeamGanttChartProps) => {
           assignedTo: "",
         });
         setIsModalOpen(false);
-        fetchTasks(token);
+        await fetchTasks(token); // Await to ensure only one update
         toast.success("Task added successfully");
       } else {
         setError(response.data.message);
       }
     } catch (err) {
       setError("Failed to add task");
+    } finally {
+      addTask.loading = false;
     }
   };
+  // Add a static property to prevent double submission
+  addTask.loading = false;
 
   const updateTask = async () => {
     if (!token || !editTask) {

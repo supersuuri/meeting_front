@@ -23,6 +23,9 @@ export default function TeamMemberAdd({
 }: TeamMemberAddProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<"member" | "admin">(
+    "member"
+  );
 
   const handleAddMember = async () => {
     if (!selectedUser) return;
@@ -39,7 +42,8 @@ export default function TeamMemberAdd({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          userId: selectedUser.id,
+          email: selectedUser.email,
+          role: selectedRole, // You need to add a way to select role in the UI
         }),
       });
 
@@ -112,6 +116,29 @@ export default function TeamMemberAdd({
           </Button>
         </div>
       )}
+
+      <div className="flex gap-2 items-center">
+        <label>
+          <input
+            type="radio"
+            name="role"
+            value="member"
+            checked={selectedRole === "member"}
+            onChange={() => setSelectedRole("member")}
+          />
+          Member
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="role"
+            value="admin"
+            checked={selectedRole === "admin"}
+            onChange={() => setSelectedRole("admin")}
+          />
+          Admin
+        </label>
+      </div>
     </div>
   );
 }

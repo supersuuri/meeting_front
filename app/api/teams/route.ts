@@ -29,9 +29,9 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const team = await Team.create({
       name,
+      admins: decoded.id, // creator is admin
+      members: [], // creator is NOT a member
       description,
-      owner: decoded.id,
-      members: [decoded.id], // Owner is automatically a member
     });
 
     return NextResponse.json({ success: true, team }, { status: 201 });
@@ -67,9 +67,9 @@ export async function GET(req: NextRequest) {
 
     await connectToDatabase();
 
-    // Find teams where user is either owner or member
+    // Find teams where user is either admin or member
     const teams = await Team.find({
-      $or: [{ owner: decoded.id }, { members: decoded.id }],
+      $or: [{ admins: decoded.id }, { members: decoded.id }],
     });
 
     return NextResponse.json({ success: true, teams });

@@ -3,62 +3,35 @@ import connectToDatabase from "@/lib/mongodb";
 import ProjectTask from "@/models/ProjectTask";
 import Team from "@/models/Team";
 import { verifyToken } from "@/lib/auth";
+import mongoose from "mongoose";
 
 // Get tasks for a specific team
 export async function GET(
-  request: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
+  const { id } = await params;
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) {
+    return NextResponse.json({ message: "Not authorized" }, { status: 401 });
+  }
+  const decoded = await verifyToken(auth.split(" ")[1]);
+  if (!decoded?.id) {
+    return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+  }
 
-  try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { success: false, message: "Not authorized" },
-        { status: 401 }
-      );
-    }
+  await connectToDatabase();
 
-    const token = authHeader.split(" ")[1];
-    const decoded = await verifyToken(token);
-
-    if (!decoded || !decoded.id) {
-      return NextResponse.json(
-        { success: false, message: "Invalid token" },
-        { status: 401 }
-      );
-    }
-
-    await connectToDatabase();
-
-    // Check if user is a member of the team
-    const team = await Team.findOne({
-      _id: id,
-      members: decoded.id,
-    });
-
-    if (!team) {
-      return NextResponse.json(
-        { success: false, message: "Team not found or you are not a member" },
-        { status: 404 }
-      );
-    }
-
-    // Get tasks for the team
-    const tasks = await ProjectTask.find({ teamId: id }).sort({
-      startDate: 1,
-    });
-
-    return NextResponse.json({ success: true, tasks });
-  } catch (error) {
-    console.error("Error fetching team tasks:", error);
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json(
-      { success: false, message: "Server error" },
-      { status: 500 }
+      { message: "Invalid or missing team ID" },
+      { status: 400 }
     );
   }
+
+  // Get tasks for the team
+  const tasks = await ProjectTask.find({ teamId: id }).sort({ createdAt: -1 });
+  return NextResponse.json({ success: true, tasks });
 }
 
 // POST handler should be updated to:
