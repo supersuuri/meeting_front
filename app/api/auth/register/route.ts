@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import User from '@/models/User';
+import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +18,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check if username already exists
+    const usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      return NextResponse.json(
+        { success: false, message: 'Username already exists' },
+        { status: 400 }
+      );
+    }
+
     // Create user
     const user = await User.create({
       username,
@@ -26,9 +36,17 @@ export async function POST(req: NextRequest) {
       lastName,
     });
 
+    // Create token
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET || "your-secret-key",
+      { expiresIn: "1h" }
+    );
+
     return NextResponse.json(
       {
         success: true,
+        token,
         user: {
           id: user._id,
           username: user.username,

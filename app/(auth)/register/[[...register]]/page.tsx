@@ -1,21 +1,21 @@
 // app/(auth)/register/page.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
-import Link from 'next/link';
+import { useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+import Link from "next/link";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: '',
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    firstName: "",
+    lastName: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
@@ -34,7 +34,7 @@ const RegisterPage = () => {
     setIsSubmitting(true);
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Passwords do not match");
       setIsSubmitting(false);
       return;
     }
@@ -47,10 +47,10 @@ const RegisterPage = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
       });
-      toast.success('Registration successful. Please login.');
-      router.push('/login');
+      toast.success("Registration successful!");
+      router.push("/"); // Redirect to home
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
+      toast.error(error.message || "Registration failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -156,11 +156,11 @@ const RegisterPage = () => {
             disabled={isSubmitting}
             className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
           >
-            {isSubmitting ? 'Registering...' : 'Register'}
+            {isSubmitting ? "Registering..." : "Register"}
           </button>
         </form>
         <p className="mt-4 text-center">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link href="/login" className="text-blue-600 hover:underline">
             Login
           </Link>

@@ -17,44 +17,42 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const token = req.headers.get("authorization")?.split(" ")[1] || "";
-  const decodedToken = await verifyToken(token);
-
-  if (!decodedToken || !decodedToken.id) {
+  const { id } = await params;
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) {
     return NextResponse.json({ message: "Not authorized" }, { status: 401 });
   }
-  const userId = decodedToken.id; // Use the id from the validated token
+  const decoded = await verifyToken(auth.split(" ")[1]);
+  if (!decoded?.id) {
+    return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+  }
 
-  const { id } = await params; // Await params here
+  await connectToDatabase();
 
-  try {
-    await connectToDatabase();
-    // Validate the id
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { message: "Invalid or missing team ID" },
-        { status: 400 }
-      );
-    }
-    const team = await Team.findOne({
-      _id: id,
-      $or: [{ admin: userId }, { members: userId }],
-    }).populate("members", "email");
-    if (!team)
-      return NextResponse.json({ message: "Not found" }, { status: 404 });
-
-    console.log(
-      "Server: Returning members data:",
-      JSON.stringify({ members: team.members }, null, 2)
-    ); // <--- Add this log
-    return NextResponse.json({ members: team.members });
-  } catch (error) {
-    console.error(error);
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 }
+      { message: "Invalid or missing team ID" },
+      { status: 400 }
     );
   }
+
+  // fetch the team, but don’t rely on populate alone for admins/admin
+  const team = await Team.findById(id);
+  if (!team) {
+    return NextResponse.json({ message: "Team not found" }, { status: 404 });
+  }
+
+  // build one array of all user‐IDs (primary admin, extra admins, and members)
+  const allIds = [team.admin, ...(team.admins || []), ...(team.members || [])]
+    .filter(Boolean)
+    .map((x) => new mongoose.Types.ObjectId(x));
+
+  // load all those users
+  const users = await User.find({ _id: { $in: allIds } }).select(
+    "-password -__v"
+  );
+
+  return NextResponse.json({ members: users });
 }
 
 export async function POST(
@@ -63,12 +61,16 @@ export async function POST(
 ) {
   try {
     const userId = await requireUser(req);
-    const { email } = await req.json();
+    const { email, role } = await req.json();
+    const user = await User.findOne({ email });
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
+    }
     const { id: teamId } = await paramsPromise; // Await paramsPromise here
     await connectToDatabase();
-    const user = await User.findOne({ email });
-    if (!user)
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
     const team = await Team.findById(teamId);
     if (!team || team.admin.toString() !== userId) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
@@ -80,8 +82,15 @@ export async function POST(
       );
     }
     team.members.push(user._id);
+    if (role === "admin") {
+      if (!team.admins) team.admins = [];
+      if (!team.admins.includes(user._id)) {
+        team.admins.push(user._id);
+      }
+      team.admins.push(user._id);
+    }
     await team.save();
-    return NextResponse.json({ message: "Member added" });
+    return NextResponse.json({ success: true, message: "Member added" });
   } catch (e: any) {
     return NextResponse.json({ message: e.message }, { status: 401 });
   }

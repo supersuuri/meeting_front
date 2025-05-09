@@ -38,10 +38,9 @@ export async function GET(req: NextRequest) {
     await connectToDatabase();
 
     // Search for users with email that matches the query (case insensitive)
-    const users = await User.find(
-      { email: { $regex: query, $options: "i" } },
-      "email username firstName lastName imageUrl"
-    ).limit(5);
+    const users = await User.find({
+      email: { $regex: query, $options: "i" },
+    }).select("email username firstName lastName imageUrl");
 
     return NextResponse.json({
       success: true,

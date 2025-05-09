@@ -61,7 +61,7 @@ export default function EmailSearch({
         }
 
         const response = await fetch(
-          `/api/users/search?query=${encodeURIComponent(searchQuery)}`,
+          `/api/users/search?email=${encodeURIComponent(searchQuery)}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

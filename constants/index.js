@@ -21,7 +21,7 @@ export const navLinks = [
     label: "Recordings",
   },
   {
-    imgURL: "/assets/teams.png",
+    imgURL: "/assets/teams.svg",
     route: "/teams",
     label: "Teams",
   },

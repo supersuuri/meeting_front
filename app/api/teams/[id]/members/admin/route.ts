@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { verifyToken } from "@/lib/auth";
 import { ObjectId } from "mongodb";
+import Team from "@/models/Team";
 
 // Define runtime for this API route
 export const runtime = "nodejs";
@@ -13,8 +14,9 @@ export async function POST(
 ) {
   const resolvedParams = await params;
   const { id } = resolvedParams;
+  let body;
   try {
-    const body = await request.json();
+    body = await request.json();
     const { memberId } = body;
     const token = request.headers.get("authorization")?.split(" ")[1] || "";
     const decoded = await verifyToken(token);
@@ -27,50 +29,40 @@ export async function POST(
     }
 
     await connectToDatabase();
-    const db = (global as any).mongo.db;
     const teamId = id;
+    const team = await Team.findById(teamId);
 
-    const team = await db.collection("teams").findOne({
-      _id: new ObjectId(teamId),
-    });
-
-    if (!team) {
+    if (!team || !team.admins) {
       return NextResponse.json(
-        { success: false, message: "Team not found" },
+        { success: false, message: "Team or team admins not found" },
         { status: 404 }
       );
     }
 
-    // Only team admin can add admins
-    if (team.adminId.toString() !== decoded.id) {
+    // Only a current admin can add admins
+    if (!team.admins.map(String).includes(decoded.id)) {
       return NextResponse.json(
-        { success: false, message: "Only team admin can manage admin roles" },
+        { success: false, message: "Only team admins can manage admin roles" },
         { status: 403 }
       );
     }
 
     // Add user to admins array if not already there
-    const updatedTeam = await db
-      .collection("teams")
-      .findOneAndUpdate(
-        { _id: new ObjectId(teamId) },
-        { $set: { name: body.name, description: body.description } },
-        { returnDocument: "after" }
-      );
-    if (!updatedTeam.value)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(updatedTeam.value);
+    if (!team.admins.map(String).includes(memberId)) {
+      team.admins.push(memberId);
+      await team.save();
+    }
 
     return NextResponse.json({
       success: true,
       message: "Admin added successfully",
-      team: updatedTeam.value,
+      team,
     });
   } catch (error) {
-    console.error("Error adding admin:", error);
+    console.error("Error adding admin:", error, { teamId: id, body });
     return NextResponse.json(
       { success: false, message: "Failed to add admin" },
-      { status: 500 }
+      { status: 400 }
     );
   }
 }
@@ -102,17 +94,17 @@ export async function DELETE(
       _id: new ObjectId(teamId),
     });
 
-    if (!team) {
+    if (!team || !team.admins) {
       return NextResponse.json(
-        { success: false, message: "Team not found" },
+        { success: false, message: "Team or team admins not found" },
         { status: 404 }
       );
     }
 
-    // Only team admin can remove admins
-    if (team.adminId.toString() !== decoded.id) {
+    // Only a current admin can remove admins
+    if (!team.admins.map(String).includes(decoded.id)) {
       return NextResponse.json(
-        { success: false, message: "Only team admin can manage admin roles" },
+        { success: false, message: "Only team admins can manage admin roles" },
         { status: 403 }
       );
     }

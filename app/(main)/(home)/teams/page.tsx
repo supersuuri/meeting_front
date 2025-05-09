@@ -18,7 +18,7 @@ import {
 interface Team {
   _id: string;
   name: string;
-  admin: string; // Add admin property
+  admins: string[];
 }
 
 export default function TeamsPage() {
@@ -117,10 +117,10 @@ export default function TeamsPage() {
                       setShowConfirmModal(true);
                     }}
                     className={`ml-4 px-3 py-1 rounded text-white ${
-                      t.admin === userId ? "" : "bg-gray-500 hover:bg-gray-700"
+                      t.admins === userId ? "" : ""
                     }`}
                   >
-                    {t.admin === userId ? (
+                    {t.admins?.includes(userId) ? (
                       <img
                         src="/assets/trash-bin.png"
                         alt="Delete"
@@ -148,11 +148,14 @@ export default function TeamsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {teamToDelete?.admin === userId ? "Delete Team" : "Leave Team"}
+              {teamToDelete?.admins?.includes(userId)
+                ? "Delete Team"
+                : "Leave Team"}
             </DialogTitle>
             <DialogDescription>
               Are you sure you want to{" "}
-              {teamToDelete?.admin === userId ? "delete" : "leave"} this team?
+              {teamToDelete?.admins?.includes(userId) ? "delete" : "leave"} this
+              team?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -175,7 +178,7 @@ export default function TeamsPage() {
                 }
               }}
             >
-              {teamToDelete?.admin === userId ? "Delete" : "Leave"}
+              {teamToDelete?.admins?.includes(userId) ? "Delete" : "Leave"}
             </button>
           </DialogFooter>
         </DialogContent>

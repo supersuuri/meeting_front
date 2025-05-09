@@ -31,7 +31,10 @@ export async function GET(
   try {
     const team = await Team.findOne({
       _id: id,
-      $or: [{ admin: decoded.id }, { members: decoded.id }],
+      $or: [
+        { admins: decoded.id }, // <-- changed from admin to admins
+        { members: decoded.id },
+      ],
     });
 
     if (!team) {
@@ -144,4 +147,63 @@ export async function DELETE(
       { status: 500 }
     );
   }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string; memberId: string }> }
+) {
+  const { id: teamId, memberId } = await params;
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) {
+    return NextResponse.json(
+      { success: false, message: "Not authorized" },
+      { status: 401 }
+    );
+  }
+  const decoded = await verifyToken(auth.split(" ")[1]);
+  if (!decoded?.id) {
+    return NextResponse.json(
+      { success: false, message: "Invalid token" },
+      { status: 401 }
+    );
+  }
+
+  await connectToDatabase();
+
+  // Validate the id
+  if (!teamId || !mongoose.Types.ObjectId.isValid(teamId)) {
+    return NextResponse.json(
+      { success: false, message: "Invalid or missing team ID" },
+      { status: 400 }
+    );
+  }
+
+  const team = await Team.findById(teamId);
+  if (!team) {
+    return NextResponse.json(
+      { success: false, message: "Team not found" },
+      { status: 404 }
+    );
+  }
+
+  // Only team admin can add admins
+  if (team.admin.toString() !== decoded.id) {
+    return NextResponse.json(
+      { success: false, message: "Only team admin can manage admin roles" },
+      { status: 403 }
+    );
+  }
+
+  // Add user to admins array if not already there
+  if (!team.admins.map(String).includes(memberId)) {
+    team.admins.push(memberId);
+    await team.save();
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: "Admin added successfully",
+    team,
+  });
 }

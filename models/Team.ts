@@ -4,8 +4,10 @@ const TeamSchema = new Schema(
   {
     name: { type: String, required: true },
     description: { type: String },
-    admin: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Changed type and added ref
-    members: [{ type: Schema.Types.ObjectId, ref: "User" }], // Changed type and added ref
+    members: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    admins: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

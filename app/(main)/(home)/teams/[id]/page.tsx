@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Loading from "@/components/Loading";
 import TeamGanttChart from "@/components/TeamGanttChart";
+import EmailSearch from "@/components/EmailSearch"; // Add this import
 
 // Import icons for sidebar
 import { Clipboard, FileText, Users, Settings } from "lucide-react";
@@ -22,13 +23,15 @@ import {
 interface Member {
   _id: string;
   email: string;
+  username?: string;
   id?: string; // <-- add this line
 }
 
 interface Team {
   _id: string;
   name: string;
-  admin: string;
+  admin: string; // Represents the primary admin or owner
+  admins?: string[]; // Represents a list of additional admin user IDs
   members: string[];
   description?: string;
 }
@@ -50,7 +53,12 @@ export default function TeamPage() {
   const [emailSuggestions, setEmailSuggestions] = useState<Member[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [newMemberRole, setNewMemberRole] = useState<"member" | "admin">(
+    "member"
+  );
 
+  // 1. fetchData only fetches the team
   const fetchData = useCallback(async () => {
     if (!teamId) return;
     setLoading(true);
@@ -68,33 +76,42 @@ export default function TeamPage() {
         throw new Error(`Failed to fetch team: ${teamRes.statusText}`);
       }
       const teamData: Team = await teamRes.json();
-      console.log("Client: Fetched team data:", teamData);
       setTeam(teamData);
-
-      // Fetch team members
-      const membersRes = await fetch(`/api/teams/${teamId}/members`, {
-        headers: {
-          Authorization: `Bearer ${currentToken}`,
-        },
-      });
-      if (!membersRes.ok) {
-        throw new Error(`Failed to fetch members: ${membersRes.statusText}`);
-      }
-      const membersData: MembersResponse = await membersRes.json();
-      console.log("Client: Fetched members data:", membersData);
-      setMembers(membersData.members);
     } catch (err: any) {
-      console.error("Client: Fetch error", err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   }, [teamId]);
 
+  // 2. Fetch all users when team changes
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (!team || !token) return;
+      try {
+        const res = await fetch(`/api/teams/${teamId}/members`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) {
+          setMembers([]);
+          return;
+        }
+        const data = await res.json();
+        setMembers(data.members || []);
+      } catch (error) {
+        setMembers([]);
+      }
+    };
+    fetchMembers();
+  }, [team, token, teamId]);
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push("/login");
   }, [isLoading, isAuthenticated, router]);
 
+  // 3. useEffect for fetchData (unchanged)
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -102,18 +119,26 @@ export default function TeamPage() {
   const handleAdd = async () => {
     if (!newEmail.trim() || !token) return;
     setLoading(true);
+    setError(null); // <-- clear previous error
     try {
-      await fetch(`/api/teams/${teamId}/members`, {
+      const res = await fetch(`/api/teams/${teamId}/members`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ email: newEmail }),
+        body: JSON.stringify({ email: newEmail, role: newMemberRole }),
       });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.message || "Failed to add member");
+        return;
+      }
       setNewEmail("");
+      setNewMemberRole("member");
       await fetchData();
-    } catch (e) {
+    } catch (e: any) {
+      setError(e.message);
       console.error(e);
     } finally {
       setLoading(false);
@@ -177,7 +202,53 @@ export default function TeamPage() {
   const isadmin =
     team &&
     token &&
-    team.admin === (JSON.parse(atob(token.split(".")[1]))?.id || "");
+    (String(team.admin) === (JSON.parse(atob(token.split(".")[1]))?.id || "") ||
+      team.admins
+        ?.map(String)
+        .includes(JSON.parse(atob(token.split(".")[1]))?.id || ""));
+
+  const handlePromoteToAdmin = async (memberId: string) => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/teams/${teamId}/members/admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ memberId }),
+      });
+      await fetchData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoteFromAdmin = async (memberId: string) => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/teams/${teamId}/members/admin`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ memberId }),
+      });
+      if (!res.ok) throw new Error("Failed to demote member");
+      alert("Admin rights removed!");
+      await fetchData();
+    } catch (e) {
+      alert("Failed to demote member.");
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Render the appropriate content based on active tab
   const renderContent = () => {
@@ -205,51 +276,119 @@ export default function TeamPage() {
       case "members":
         return (
           <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Members</h2>
-            <ul className="space-y-2 mb-4">
-              {members.map((m) => (
-                <li
-                  key={m._id}
-                  className="flex justify-between items-center p-2 bg-white border rounded"
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Members</h2>
+              {isadmin && (
+                <button
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  onClick={() => setShowAddMemberModal(true)}
+                  type="button"
                 >
-                  <span>{m.email}</span>
-                  {isadmin && m._id !== team?.admin && (
-                    <button
-                      onClick={() => handleRemove(m._id)}
-                      className="text-red-600 hover:underline text-sm"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </li>
-              ))}
+                  Add Member
+                </button>
+              )}
+            </div>
+            <ul className="space-y-2 mb-4">
+              {members.map((m) => {
+                const isMemberAdmin =
+                  team?.admins?.map(String).includes(String(m._id)) ||
+                  String(team?.admin) === String(m._id);
+                return (
+                  <li
+                    key={m._id}
+                    className="flex justify-between items-center p-2 bg-white border rounded"
+                  >
+                    <div>
+                      <div className="font-semibold text-lg">
+                        {m.username || m.email.split("@")[0] || "User"}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span>{m.email}</span>
+                        <span className="ml-2 text-xs font-semibold">
+                          ({isMemberAdmin ? "admin" : "member"})
+                        </span>
+                        {isadmin && m._id !== team?.admin && (
+                          <button
+                            className="ml-2 p-1 hover:bg-gray-100 rounded"
+                            onClick={() => {
+                              if (isMemberAdmin) {
+                                handleDemoteFromAdmin(m._id);
+                              } else {
+                                handlePromoteToAdmin(m._id);
+                              }
+                            }}
+                            title={
+                              isMemberAdmin ? "Remove admin role" : "Make admin"
+                            }
+                          >
+                            <img
+                              src="/assets/pencil.svg"
+                              alt="Edit role"
+                              className="w-4 h-4"
+                            />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {isadmin && m._id !== team?.admin && (
+                        <button
+                          onClick={() => handleRemove(m._id)}
+                          className="text-red-600 hover:underline text-sm"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
-            {isadmin && (
-              <section className="bg-white p-4 rounded shadow mt-6">
-                <h3 className="font-medium mb-2">Add Member</h3>
-                <div className="flex flex-col relative">
-                  <div className="flex space-x-2">
-                    <input
-                      type="email"
-                      value={newEmail}
-                      onChange={handleEmailChange}
-                      placeholder="user@example.com"
-                      className="border p-2 rounded flex-grow"
-                      autoComplete="off"
-                      onFocus={() =>
-                        setShowSuggestions(emailSuggestions.length > 0)
-                      }
-                      onBlur={() =>
-                        setTimeout(() => setShowSuggestions(false), 100)
-                      }
-                    />
-                    <button
-                      onClick={handleAdd}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      Add
-                    </button>
-                  </div>
+            <Dialog
+              open={showAddMemberModal}
+              onOpenChange={setShowAddMemberModal}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Member</DialogTitle>
+                  <DialogDescription>
+                    Enter the email address and select a role for the new team
+                    member.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-2">
+                  <EmailSearch
+                    onUserSelect={(user) => {
+                      setNewEmail(user.email);
+                      setShowSuggestions(false);
+                    }}
+                    placeholder="Search user by email"
+                  />
+                  {newEmail && (
+                    <div className="text-sm text-gray-700">
+                      Selected:{" "}
+                      <span className="font-semibold">{newEmail}</span>
+                    </div>
+                  )}
+                  <select
+                    value={newMemberRole}
+                    onChange={(e) =>
+                      setNewMemberRole(e.target.value as "member" | "admin")
+                    }
+                    onBlur={() =>
+                      setTimeout(() => setShowSuggestions(false), 100)
+                    }
+                  >
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button
+                    onClick={handleAdd}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={loading || !newEmail}
+                  >
+                    Add
+                  </button>
                   {showSuggestions && emailSuggestions.length > 0 && (
                     <ul className="absolute z-10 bg-white border rounded w-full mt-10 max-h-40 overflow-y-auto shadow">
                       {emailSuggestions.map((user) => (
@@ -264,8 +403,8 @@ export default function TeamPage() {
                     </ul>
                   )}
                 </div>
-              </section>
-            )}
+              </DialogContent>
+            </Dialog>
           </div>
         );
       case "settings":
@@ -413,7 +552,7 @@ export default function TeamPage() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="w-64 bg-gray-50 text-black flex flex-col">
+      <div className="w-64 text-black flex flex-col">
         <div className="p-4">
           <h1 className="text-xl font-bold truncate">{team.name}</h1>
         </div>
