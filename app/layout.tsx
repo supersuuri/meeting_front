@@ -5,7 +5,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import SessionClientProvider from "@/components/SessionProvider"; // Make sure this path matches your file
 
@@ -37,7 +36,6 @@ export default function RootLayout({
         >
           <SessionClientProvider>{children}</SessionClientProvider>
           <Toaster />
-          <Analytics />
           <SpeedInsights />
         </body>
       </html>
