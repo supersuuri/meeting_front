@@ -32,28 +32,40 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#ffffff] to-[#ffffff] p-8">
-      <div className="flex w-full h-[500px] max-w-[900px] bg-[#8da6cc] rounded-3xl overflow-hidden shadow-lg">
-        <div className="w-1/2 p-10 text-white flex flex-col justify-start">
-          <div className="flex justify-center items-start mb-4">
-            <Image src="/assets/logo.png" alt="Logo" width={100} height={100} />
-          </div>
-          <h1 className="text-4xl font-bold mb-4">WELCOME</h1>
-          <h2 className="text-xl font-semibold mb-4">
-            Connect, Communicate, Collaborate in Real-Time
-          </h2>
-          <p className="text-sm opacity-80">
-            Seamlessly connect, communicate, and collaborate with friends,
-            family, and colleagues anytime, anywhere. Our app delivers
-            crystal-clear video calls, smooth interactions, and intuitive
-            features to keep you connected effortlessly.
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
+      {/* Illustration / Welcome Panel */}
+      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#4da1e6] to-[#3a87c9] text-white p-10">
+        <div className="space-y-4 max-w-sm">
+          <Image
+            src="/assets/meeting-picture-background.svg"
+            alt="Web illustration"
+            width={300}
+            height={300}
+            className="mt-6"
+          />
+          <h2 className="text-4xl font-bold">Explore the Open Web</h2>
+          <p className="opacity-90">
+            The web is your canvas for connection, creativity, and discovery.
+            Log in to dive into dynamic content and global communities beyond
+            imagination.
           </p>
+          
         </div>
+      </div>
 
-        {/* Right Section: Sign In Form */}
-        <div className="w-3/7 m-8 p-6 bg-white border-2 border-[#4da1e6] rounded-3xl flex flex-col justify-center">
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">Sign In</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Form Panel */}
+      <div className="flex items-center justify-center p-8 bg-gray-50">
+        {/* add flip classes here */}
+        <div
+          className="
+            w-full max-w-md bg-white p-8 rounded-xl shadow-lg space-y-6
+            transform-preserve-3d backface-hidden animate-flipInY
+          "
+        >
+          <h3 className="text-3xl font-semibold text-gray-800 text-center">
+            Sign In
+          </h3>
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Input */}
             <div>
               <input
@@ -72,6 +84,7 @@ const LoginPage = () => {
               <input
                 type={showPassword ? "text" : "password"}
                 id="password"
+                name="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
@@ -80,10 +93,24 @@ const LoginPage = () => {
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 px-3 flex items-center text-sm text-gray-600 hover:text-gray-900"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-0 p-2"
               >
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? (
+                  <Image
+                    src="/assets/close-eye.svg"
+                    alt="Hide"
+                    width={20}
+                    height={20}
+                  />
+                ) : (
+                  <Image
+                    src="/assets/open-eye.svg"
+                    alt="Show"
+                    width={20}
+                    height={20}
+                  />
+                )}
               </button>
             </div>
 
@@ -110,16 +137,18 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#4da1e6] text-white py-3 rounded-md hover:bg-[#3a87c9] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-gradient-to-r from-[#4da1e6] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition"
             >
               {isSubmitting ? "Logging in..." : "Sign In"}
             </button>
           </form>
 
-          {/* Sign Up Link */}
-          <p className="mt-4 text-center text-sm text-gray-600">
-            Don't have an account?{" "}
-            <Link href="/register" className="text-[#4da1e6] hover:underline">
+          <p className="text-center text-sm text-gray-600">
+            Don’t have an account?{" "}
+            <Link
+              href="/register"
+              className="text-[#4da1e6] font-medium hover:underline"
+            >
               Sign Up
             </Link>
           </p>

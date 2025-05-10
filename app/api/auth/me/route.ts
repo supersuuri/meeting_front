@@ -4,25 +4,14 @@ import connectToDatabase from "@/lib/mongodb";
 import User from "@/models/User";
 import { verifyToken } from "@/lib/jwt";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest) {
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) {
+    return NextResponse.json({ message: "Not authorized" }, { status: 401 });
+  }
 
   try {
-    // Get token from authorization header
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { success: false, message: "Not authorized" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    // Verify token
-    const decoded = verifyToken(token) as { id: string };
+    const decoded = verifyToken(auth.split(" ")[1]) as { id: string };
 
     await connectToDatabase();
     const user = await User.findById(decoded.id);
@@ -52,11 +41,13 @@ export async function GET(
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Get user error:", error);
-    return NextResponse.json(
-      { success: false, message: "Not authorized" },
-      { status: 401 }
-    );
+    // expired JWT
+    if (error.name === "TokenExpiredError") {
+      return NextResponse.json({ message: "Token expired" }, { status: 401 });
+    }
+    // all other token errors
+    return NextResponse.json({ message: "Not authorized" }, { status: 401 });
   }
 }
