@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import AvatarSelector from "@/components/AvatarSelector";
 
 export default function ProfilePage() {
@@ -13,9 +12,6 @@ export default function ProfilePage() {
     bio: "",
     joined: "",
     profileImage: "/assets/profile-placeholder.png",
-    coursesCompleted: 0, // Added for dynamic data
-    hoursPracticed: 0, // Added for dynamic data
-    currentStreak: 0, // Added for dynamic data
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,13 +64,8 @@ export default function ProfilePage() {
           bio: userData.bio || "No bio available",
           joined: formattedDate,
           profileImage: userData.imageUrl || "/assets/profile-placeholder.png",
-          // Initialize with 0 if not provided by API, aligning with initial state
-          coursesCompleted: userData.coursesCompleted || 0,
-          hoursPracticed: userData.hoursPracticed || 0,
-          currentStreak: userData.currentStreak || 0,
         });
       } catch (err) {
-        console.error("Error fetching user data:", err);
         setError("Could not load your profile data");
       } finally {
         setLoading(false);
@@ -139,7 +130,6 @@ export default function ProfilePage() {
       setIsEditing(false);
       setUpdateStatus({ loading: false, error: "" });
     } catch (err) {
-      console.error("Error updating profile:", err);
       setUpdateStatus({
         loading: false,
         error: "Failed to update profile. Please try again.",
