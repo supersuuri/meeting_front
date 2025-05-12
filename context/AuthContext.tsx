@@ -11,6 +11,7 @@ type User = {
   firstName: string;
   lastName: string;
   imageUrl: string;
+  isEmailVerified: boolean;
 };
 
 type AuthContextType = {
@@ -21,6 +22,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
+  isEmailVerified: boolean;
 };
 
 type RegisterData = {
@@ -39,6 +41,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   register: async () => {},
   logout: () => {},
+  isEmailVerified: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -48,6 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in on page load
@@ -67,15 +71,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const data = await response.json();
             setUser(data.user);
             setIsAuthenticated(true);
+            setIsEmailVerified(data.user.isEmailVerified);
           } else {
             localStorage.removeItem("token");
             setToken(null);
+            setIsEmailVerified(false);
           }
         }
       } catch (error) {
         console.error("Failed to fetch user:", error);
         localStorage.removeItem("token");
         setToken(null);
+        setIsEmailVerified(false);
       } finally {
         setIsLoading(false);
       }
@@ -107,6 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setUser(data.user);
       setIsAuthenticated(true);
+      setIsEmailVerified(data.user.isEmailVerified);
       return data;
     } catch (error) {
       console.error("Login error:", error);
@@ -147,6 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
+    setIsEmailVerified(false);
   };
 
   return (
@@ -159,6 +168,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         register,
         logout,
+        isEmailVerified,
       }}
     >
       {children}

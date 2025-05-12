@@ -43,10 +43,18 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  // teamIDs: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   default: "",
-  // }
+  emailVerificationToken: {
+    type: String,
+    select: false,
+  },
+  emailVerificationExpires: {
+    type: Date,
+    select: false,
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Hash password before saving

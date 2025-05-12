@@ -49,8 +49,10 @@ const RegisterPage = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
       });
-      toast.success("Registration successful. Please login.");
-      router.push("/login");
+      toast.success(
+        "Registration successful. Please check your email to verify your account."
+      ); // Updated message
+      router.push("/login?message=verify-email"); // Optionally redirect with a query param
     } catch (error: any) {
       toast.error(error.message || "Registration failed");
     } finally {
