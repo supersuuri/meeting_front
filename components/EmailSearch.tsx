@@ -29,6 +29,7 @@ export default function EmailSearch({
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const wasJustSelectedRef = useRef(false); // Use a ref instead of state
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -47,9 +48,17 @@ export default function EmailSearch({
   }, []);
 
   useEffect(() => {
+    if (wasJustSelectedRef.current) {
+      // If the query changed because a user was selected,
+      // reset the flag and skip the search for this update.
+      wasJustSelectedRef.current = false;
+      return;
+    }
+
     const searchUsers = async () => {
       if (searchQuery.length < 2) {
         setSearchResults([]);
+        setIsOpen(false); // Close dropdown if query is too short
         return;
       }
 
@@ -57,6 +66,8 @@ export default function EmailSearch({
       try {
         const token = localStorage.getItem("token");
         if (!token) {
+          setSearchResults([]);
+          setIsOpen(false);
           throw new Error("Not authenticated");
         }
 
@@ -70,12 +81,17 @@ export default function EmailSearch({
         );
 
         const data = await response.json();
-        if (data.success) {
+        if (data.success && data.users) {
           setSearchResults(data.users);
-          setIsOpen(true);
+          setIsOpen(data.users.length > 0);
+        } else {
+          setSearchResults([]);
+          setIsOpen(false);
         }
       } catch (error) {
         console.error("Error searching users:", error);
+        setSearchResults([]);
+        setIsOpen(false);
       } finally {
         setIsLoading(false);
       }
@@ -87,13 +103,14 @@ export default function EmailSearch({
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
+  }, [searchQuery]); // Only searchQuery as dependency
 
   const handleUserSelect = (user: User) => {
     onUserSelect(user);
-    setSearchQuery("");
-    setSearchResults([]);
-    setIsOpen(false);
+    wasJustSelectedRef.current = true; // Set ref flag before updating searchQuery
+    setSearchQuery(user.email); // Update input with selected email
+    setSearchResults([]); // Clear current search results
+    setIsOpen(false); // Close the dropdown
   };
 
   return (
@@ -101,13 +118,19 @@ export default function EmailSearch({
       <input
         type="text"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          // No need to manage wasJustSelectedRef here; useEffect handles it.
+        }}
+        onFocus={() => {
+          // if (searchQuery.length >= 2 && searchResults.length > 0) setIsOpen(true);
+        }}
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
       />
 
       {isLoading && (
-        <div className="absolute right-2 top-2">
+        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
           <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
         </div>
       )}
@@ -123,13 +146,15 @@ export default function EmailSearch({
               <div className="h-8 w-8 mr-3 relative">
                 <Image
                   src={user.imageUrl || "/assets/profile-placeholder.png"}
-                  alt={user.name}
+                  alt={user.name || user.username || user.email}
                   fill
                   className="rounded-full object-cover"
                 />
               </div>
               <div>
-                <div className="text-sm font-medium">{user.name}</div>
+                <div className="text-sm font-medium">
+                  {user.name || user.username}
+                </div>
                 <div className="text-xs text-gray-500">{user.email}</div>
               </div>
             </div>

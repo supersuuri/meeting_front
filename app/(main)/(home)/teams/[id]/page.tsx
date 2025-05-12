@@ -55,6 +55,7 @@ export default function TeamPage() {
   const [newMemberRole, setNewMemberRole] = useState<"member" | "admin">(
     "member"
   );
+  const [emailSearchKey, setEmailSearchKey] = useState(Date.now()); // Key to reset EmailSearch
 
   // 1. fetchData only fetches the team
   const fetchData = useCallback(async () => {
@@ -134,7 +135,9 @@ export default function TeamPage() {
       }
       setNewEmail("");
       setNewMemberRole("member");
-      await fetchData();
+      setShowAddMemberModal(false); // Close the modal on success
+      setEmailSearchKey(Date.now()); // Reset EmailSearch component
+      await fetchData(); // Re-fetch data to update the member list
     } catch (e: any) {
       setError(e.message);
       console.error(e);
@@ -248,11 +251,12 @@ export default function TeamPage() {
         body: JSON.stringify({ memberId }),
       });
       if (!res.ok) throw new Error("Failed to demote member");
-      alert("Admin rights removed!");
+      // Optionally: Show a toast or console message here
+      console.log("Admin rights removed!");
       await fetchData();
     } catch (e) {
-      alert("Failed to demote member.");
-      console.error(e);
+      // Optionally: Handle the error with a toast or log
+      console.error("Failed to demote member:", e);
     } finally {
       setLoading(false);
     }
@@ -358,63 +362,92 @@ export default function TeamPage() {
             </ul>
             <Dialog
               open={showAddMemberModal}
-              onOpenChange={setShowAddMemberModal}
+              onOpenChange={(isOpen) => {
+                setShowAddMemberModal(isOpen);
+                if (!isOpen) {
+                  setError(null);
+                  setNewEmail("");
+                  setNewMemberRole("member"); // Reset role as well
+                  setEmailSearchKey(Date.now()); // Generate new key to reset EmailSearch
+                }
+              }}
             >
-              <DialogContent>
+              <DialogContent className="bg-white p-6 rounded-lg shadow-xl sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Add Member</DialogTitle>
-                  <DialogDescription>
-                    Enter the email address and select a role for the new team
-                    member.
+                  <DialogTitle className="text-2xl font-semibold text-gray-900">
+                    Add New Member
+                  </DialogTitle>
+                  <DialogDescription className="mt-1 text-sm text-gray-600">
+                    Search for a user by their email address and assign them a
+                    role within the team.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-col gap-2">
-                  <EmailSearch
-                    onUserSelect={(user) => {
-                      setNewEmail(user.email);
-                      setShowSuggestions(false);
-                    }}
-                    placeholder="Search user by email"
-                  />
-                  {newEmail && (
-                    <div className="text-sm text-gray-700">
-                      Selected:{" "}
-                      <span className="font-semibold">{newEmail}</span>
-                    </div>
-                  )}
-                  <select
-                    value={newMemberRole}
-                    onChange={(e) =>
-                      setNewMemberRole(e.target.value as "member" | "admin")
-                    }
-                    onBlur={() =>
-                      setTimeout(() => setShowSuggestions(false), 100)
-                    }
-                  >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <button
-                    onClick={handleAdd}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    disabled={loading || !newEmail}
-                  >
-                    Add
-                  </button>
-                  {showSuggestions && emailSuggestions.length > 0 && (
-                    <ul className="absolute z-10 bg-white border rounded w-full mt-10 max-h-40 overflow-y-auto shadow">
-                      {emailSuggestions.map((user) => (
-                        <li
-                          key={user._id}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                          onMouseDown={() => handleSuggestionClick(user.email)}
-                        >
-                          {user.email}
-                        </li>
-                      ))}
-                    </ul>
+
+                <div className="mt-6 space-y-6">
+                  {" "}
+                  {/* Increased spacing */}
+                  <div>
+                    <label
+                      htmlFor="email-search-modal"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      User Email
+                    </label>
+                    <EmailSearch
+                      key={emailSearchKey} // Add key to control re-rendering and reset
+                      onUserSelect={(user) => {
+                        setNewEmail(user.email);
+                      }}
+                      placeholder="Search by email..."
+                      // Ensure EmailSearch's input field is styled appropriately, e.g., with Tailwind classes like:
+                      // className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="member-role-modal"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Role
+                    </label>
+                    <select
+                      id="member-role-modal"
+                      value={newMemberRole}
+                      onChange={(e) =>
+                        setNewMemberRole(e.target.value as "member" | "admin")
+                      }
+                      className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 bg-white"
+                    >
+                      <option value="member">Member</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  {error && ( // Display errors within the modal
+                    <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
+                      {error}
+                    </p>
                   )}
                 </div>
+
+                <DialogFooter className="mt-8 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={handleAdd}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                    disabled={loading || !newEmail}
+                  >
+                    {loading ? "Adding..." : "Add Member"}
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 sm:mt-0 sm:w-auto sm:text-sm"
+                    onClick={() => {
+                      setShowAddMemberModal(false); // This will trigger onOpenChange(false)
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>

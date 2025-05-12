@@ -28,9 +28,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Create token
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error(
+        "CRITICAL: JWT_SECRET is not defined for token signing in login."
+      );
+      throw new Error("Server configuration error: JWT_SECRET not set.");
+    }
     const token = jwt.sign(
-      { id: user._id }, // Remove iat here
-      process.env.JWT_SECRET || "your-secret-key",
+      { id: user._id },
+      secret, // Use the secret from env
       {
         expiresIn: "1h",
       }

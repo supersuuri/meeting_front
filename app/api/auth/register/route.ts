@@ -1,7 +1,7 @@
 // app/api/auth/register/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import User from '@/models/User';
+import { NextRequest, NextResponse } from "next/server";
+import connectToDatabase from "@/lib/mongodb";
+import User from "@/models/User";
 import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const userExists = await User.findOne({ email });
     if (userExists) {
       return NextResponse.json(
-        { success: false, message: 'User already exists' },
+        { success: false, message: "User already exists" },
         { status: 400 }
       );
     }
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const usernameExists = await User.findOne({ username });
     if (usernameExists) {
       return NextResponse.json(
-        { success: false, message: 'Username already exists' },
+        { success: false, message: "Username already exists" },
         { status: 400 }
       );
     }
@@ -37,9 +37,16 @@ export async function POST(req: NextRequest) {
     });
 
     // Create token
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error(
+        "CRITICAL: JWT_SECRET is not defined for token signing in register."
+      );
+      throw new Error("Server configuration error: JWT_SECRET not set.");
+    }
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET || "your-secret-key",
+      secret, // Use the secret from env
       { expiresIn: "1h" }
     );
 
@@ -59,9 +66,9 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error("Registration error:", error);
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { success: false, message: "Server error" },
       { status: 500 }
     );
   }

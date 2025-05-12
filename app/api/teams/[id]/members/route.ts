@@ -63,7 +63,7 @@ export async function POST(
 ) {
   try {
     const currentUserId = await requireUser(req); // Renamed to currentUserId for clarity
-    const { email, role } = await req.json();
+    const { email, role } = await req.json(); // role is "member" or "admin"
     const userToAdd = await User.findOne({ email }); // Renamed to userToAdd
     if (!userToAdd) {
       return NextResponse.json(
@@ -86,27 +86,75 @@ export async function POST(
       );
     }
 
-    // Check if user is already a member
-    if (team.members.map(String).includes(userToAdd._id.toString())) {
-      return NextResponse.json(
-        { message: "User is already a member" },
-        { status: 400 }
-      );
+    const userToAddIdStr = userToAdd._id.toString();
+    const userToAddObjectId = userToAdd._id;
+
+    // Ensure arrays exist on the team document
+    if (!team.members) {
+      team.members = [];
+    }
+    if (!team.admins) {
+      team.admins = [];
     }
 
-    team.members.push(userToAdd._id);
+    const isCurrentlyMember = team.members
+      .map((id: mongoose.Types.ObjectId) => id.toString())
+      .includes(userToAddIdStr);
+    const isCurrentlyAdmin = team.admins
+      .map((id: mongoose.Types.ObjectId) => id.toString())
+      .includes(userToAddIdStr);
+
     if (role === "admin") {
-      if (!team.admins) team.admins = [];
-      if (!team.admins.map(String).includes(userToAdd._id.toString())) {
-        team.admins.push(userToAdd._id);
+      if (isCurrentlyAdmin) {
+        return NextResponse.json(
+          { message: "User is already an admin." },
+          { status: 400 }
+        );
+      }
+      // Add to admins array if not already there
+      if (!team.admins.map((id: mongoose.Types.ObjectId) => id.toString()).includes(userToAddIdStr)) {
+        team.admins.push(userToAddObjectId);
+      }
+      // If they were a regular member, remove them from members list (promotion)
+      if (isCurrentlyMember) {
+        team.members = team.members.filter(
+          (id: mongoose.Types.ObjectId) => id.toString() !== userToAddIdStr
+        );
+      }
+    } else {
+      // role === "member"
+      if (isCurrentlyMember) {
+        return NextResponse.json(
+          { message: "User is already a member." },
+          { status: 400 }
+        );
+      }
+      // If they are currently an admin, prevent adding as a regular member via this endpoint.
+      // Demotion should be a separate action.
+      if (isCurrentlyAdmin) {
+        return NextResponse.json(
+          {
+            message:
+              "User is currently an admin. To make them a regular member, please use the demote action.",
+          },
+          { status: 400 }
+        );
+      }
+      // Add to members array
+      if (!team.members.map((id: mongoose.Types.ObjectId) => id.toString()).includes(userToAddIdStr)) {
+        team.members.push(userToAddObjectId);
       }
     }
+
     await team.save();
-    return NextResponse.json({ success: true, message: "Member added" });
+    return NextResponse.json({
+      success: true,
+      message: "Member processed successfully.",
+    });
   } catch (e: any) {
-    console.error("Error adding member:", e);
+    console.error("Error processing member:", e);
     return NextResponse.json(
-      { message: e.message || "Failed to add member" },
+      { message: e.message || "Failed to process member" },
       { status: 500 }
     );
   }

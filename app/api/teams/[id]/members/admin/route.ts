@@ -127,6 +127,12 @@ export async function DELETE(
     team.admins = team.admins.filter(
       (admin_id: mongoose.Types.ObjectId) => admin_id.toString() !== memberId
     );
+
+    // Add the user to the members array if they are not already there
+    if (!team.members.map(String).includes(memberId)) {
+      team.members.push(new ObjectId(memberId));
+    }
+
     await team.save();
 
     return NextResponse.json({
