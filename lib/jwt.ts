@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import * as jose from "jose";
 
 export function verifyToken(token: string) {
   try {
@@ -50,5 +51,41 @@ export function verifyToken(token: string) {
       );
     }
     throw error; // Rethrow the error to be handled by the calling route
+  }
+}
+
+export async function verifyTokenEdge(
+  token: string
+): Promise<{ id: string } | null> {
+  const secretString = process.env.JWT_SECRET;
+  if (!secretString) {
+    console.error(
+      "CRITICAL: JWT_SECRET is not defined in environment variables for Edge."
+    );
+    throw new Error(
+      "JWT_SECRET is not defined. Authentication system is misconfigured for Edge."
+    );
+  }
+  const secret = new TextEncoder().encode(secretString);
+
+  try {
+    const { payload } = await jose.jwtVerify(token, secret);
+    if (payload && typeof payload.id === "string") {
+      return { id: payload.id };
+    }
+    if (payload && typeof payload.id === "number") {
+      return { id: String(payload.id) };
+    }
+    // If 'id' is present but not string/number, or payload structure is different
+    // you might need to adjust this based on how your JWTs are structured.
+    // For example, if your JWT payload is directly the user ID or an object containing it.
+    // Assuming the payload itself might be what you need, or it contains an 'id'.
+    // This part needs to match the structure of JWTs signed by `jsonwebtoken`
+    // If `jsonwebtoken` signs { id: 'userId' }, then `payload.id` should work.
+    console.error("Invalid token payload structure in Edge:", payload);
+    return null;
+  } catch (error) {
+    console.error("Edge token verification failed:", error);
+    return null;
   }
 }
