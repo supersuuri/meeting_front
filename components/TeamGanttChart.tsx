@@ -45,9 +45,13 @@ interface TeamMember {
 
 interface TeamGanttChartProps {
   teamId: string;
+  showAddControls?: boolean; // New prop
 }
 
-const TeamGanttChart = ({ teamId }: TeamGanttChartProps) => {
+const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
+  teamId,
+  showAddControls = true, // Default to true so it shows by default elsewhere
+}) => {
   const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [newTask, setNewTask] = useState({
     name: "",
@@ -266,16 +270,18 @@ const TeamGanttChart = ({ teamId }: TeamGanttChartProps) => {
   };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto bg-white shadow-lg rounded-lg mt-10 mb-10 py-10 px-10 border-1">
+    <div className="p-4 max-w-6xl mx-auto bg-white rounded-lg mt-10 mb-10 py-10 px-10 border-1">
       <h1 className="text-2xl font-bold mb-4">Team Gantt Chart</h1>
 
       {error && <div className="text-red-500 mb-4">{error}</div>}
-      <button
-        onClick={openAddModal}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-      >
-        Add Task/Milestone
-      </button>
+      {showAddControls && (
+        <button
+          onClick={openAddModal}
+          className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+        >
+          Add Task/Milestone
+        </button>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center z-50">
