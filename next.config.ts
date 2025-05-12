@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "meeting-app-navy.vercel.app" },
-      { protocol: "http", hostname: "Localhost:3000" },
+      { protocol: "http", hostname: "localhost:3000" },
       { protocol: "http", hostname: "192.168.56.1:3000" },
     ],
   },
