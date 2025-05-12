@@ -43,6 +43,10 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // teamIDs: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   default: "",
+  // }
 });
 
 // Hash password before saving

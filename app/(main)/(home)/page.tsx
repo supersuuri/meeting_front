@@ -1,6 +1,6 @@
-import StatusBar from "@/components/StatusBar";
 import MainMenu from "@/components/MainMenu";
 import GanttChart from "@/components/GanttChart";
+import GanttHome from "@/components/GanttHome";
 
 const HomePage = () => {
   return (
@@ -10,7 +10,8 @@ const HomePage = () => {
         </div>
         <div className="flex flex-col gap-10 w-3/4">
             {/* <StatusBar /> */}
-            <GanttChart />
+            {/* <GanttChart /> */}
+            <GanttHome />
         </div>
     </section>
   );
