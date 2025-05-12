@@ -38,7 +38,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  const { id: teamId } = await params; // Renamed for clarity
 
   const auth = req.headers.get("authorization") || "";
   if (!auth.startsWith("Bearer "))
@@ -54,7 +54,7 @@ export async function POST(
       { status: 401 }
     );
 
-  if (!mongoose.Types.ObjectId.isValid(id))
+  if (!mongoose.Types.ObjectId.isValid(teamId))
     return NextResponse.json(
       { success: false, message: "Invalid team ID" },
       { status: 400 }
@@ -62,16 +62,20 @@ export async function POST(
 
   await connectToDatabase();
 
-  // ensure user is on the team
-  const team = await Team.findOne({ _id: id, members: decoded.id });
-  if (!team)
+  // Ensure user is an admin of the team
+  const team = await Team.findOne({ _id: teamId, admins: decoded.id }); // Check if user is in admins array
+  if (!team) {
     return NextResponse.json(
-      { success: false, message: "Team not found or access denied" },
-      { status: 404 }
+      {
+        success: false,
+        message: "Team not found or user is not an admin of this team",
+      },
+      { status: 403 } // Forbidden if not an admin
     );
+  }
 
   const taskData = await req.json();
-  const task = await ProjectTask.create({ ...taskData, teamId: id });
+  const task = await ProjectTask.create({ ...taskData, teamId: teamId });
 
   return NextResponse.json({ success: true, task }, { status: 201 });
 }

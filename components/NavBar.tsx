@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navLinks } from "@/constants";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext"; // Import useAuth hook
 import DateAndTime from "./DateAndTime";
 
@@ -16,6 +16,7 @@ const NavBar = () => {
   );
   const [imageError, setImageError] = useState(false);
   const { user, logout } = useAuth(); // Get user from AuthContext as well
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Set profile image from AuthContext when available
   useEffect(() => {
@@ -29,8 +30,16 @@ const NavBar = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Use the /me endpoint instead of /user
-        const response = await fetch("/api/auth/me");
+        const token = document.cookie
+          .split("; ")
+          .find((c) => c.startsWith("token="))
+          ?.split("=")[1];
+
+        const response = await fetch("/api/auth/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (response.ok) {
           const userData = await response.json();
           if (userData.imageUrl) {
@@ -53,6 +62,20 @@ const NavBar = () => {
     e.preventDefault();
     logout(); // Use the AuthContext logout function
   };
+
+  // close sidebar on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [wrapperRef]);
 
   // Debug log to check what's happening
   console.log("Profile image URL:", profileImage);
@@ -109,7 +132,7 @@ const NavBar = () => {
         </section>
 
         {/* User button */}
-        <div className="relative flex gap-6 items-center">
+        <div ref={wrapperRef} className="relative flex gap-6 items-center">
           <DateAndTime />
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -139,13 +162,13 @@ const NavBar = () => {
               <Link href="/profile">
                 <button className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
                   <div className="flex items-center">
-                  <Image
-                    src="/assets/profile-placeholder.png"
-                    alt="Profile"
-                    width={20}
-                    height={20}
-                    className="mr-2"
-                  />
+                    <Image
+                      src="/assets/profile-placeholder.png"
+                      alt="Profile"
+                      width={20}
+                      height={20}
+                      className="mr-2"
+                    />
                     Profile
                   </div>
                 </button>

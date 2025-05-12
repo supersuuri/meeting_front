@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const team = await Team.create({
       name,
-      admins: decoded.id, // creator is admin
-      members: [], // creator is NOT a member
+      admins: [decoded.id], // creator is an admin
+      members: [decoded.id], // creator is also a member by default
       description,
     });
 

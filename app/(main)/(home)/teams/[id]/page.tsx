@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react"; // Added useMemo
 import { useAuth } from "@/context/AuthContext";
 import Loading from "@/components/Loading";
 import TeamGanttChart from "@/components/TeamGanttChart";
@@ -24,13 +24,11 @@ interface Member {
   _id: string;
   email: string;
   username?: string;
-  id?: string; // <-- add this line
 }
 
 interface Team {
   _id: string;
   name: string;
-  admin: string; // Represents the primary admin or owner
   admins?: string[]; // Represents a list of additional admin user IDs
   members: string[];
   description?: string;
@@ -41,7 +39,7 @@ interface MembersResponse {
 }
 
 export default function TeamPage() {
-  const { token, isLoading, isAuthenticated } = useAuth();
+  const { token, isLoading, isAuthenticated, user: currentUser } = useAuth(); // Assuming user object from useAuth has id
   const router = useRouter();
   const { id: teamId } = useParams() as { id: string };
   const [team, setTeam] = useState<Team | null>(null);
@@ -198,14 +196,24 @@ export default function TeamPage() {
     setShowSuggestions(false);
   };
 
-  // Helper: is current user the team admin?
-  const isadmin =
-    team &&
-    token &&
-    (String(team.admin) === (JSON.parse(atob(token.split(".")[1]))?.id || "") ||
-      team.admins
-        ?.map(String)
-        .includes(JSON.parse(atob(token.split(".")[1]))?.id || ""));
+  const userId = useMemo(() => {
+    // Prefer getting userId from auth context if available and reliable
+    if (currentUser?.id) return currentUser.id;
+    if (token && token.includes(".")) {
+      try {
+        return JSON.parse(atob(token.split(".")[1]))?.id || "";
+      } catch (e) {
+        console.error("Failed to parse token:", e);
+        return "";
+      }
+    }
+    return "";
+  }, [token, currentUser]);
+
+  const isadmin = useMemo(() => {
+    if (!team || !userId) return false;
+    return team.admins?.map(String).includes(userId);
+  }, [team, userId]);
 
   const handlePromoteToAdmin = async (memberId: string) => {
     if (!token) return;
@@ -290,9 +298,9 @@ export default function TeamPage() {
             </div>
             <ul className="space-y-2 mb-4">
               {members.map((m) => {
-                const isMemberAdmin =
-                  team?.admins?.map(String).includes(String(m._id)) ||
-                  String(team?.admin) === String(m._id);
+                const isMemberAlsoAdmin = team?.admins
+                  ?.map(String)
+                  .includes(String(m._id));
                 return (
                   <li
                     key={m._id}
@@ -305,40 +313,44 @@ export default function TeamPage() {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span>{m.email}</span>
                         <span className="ml-2 text-xs font-semibold">
-                          ({isMemberAdmin ? "admin" : "member"})
+                          ({isMemberAlsoAdmin ? "admin" : "member"})
                         </span>
-                        {isadmin && m._id !== team?.admin && (
-                          <button
-                            className="ml-2 p-1 hover:bg-gray-100 rounded"
-                            onClick={() => {
-                              if (isMemberAdmin) {
-                                handleDemoteFromAdmin(m._id);
-                              } else {
-                                handlePromoteToAdmin(m._id);
+                        {isadmin &&
+                          userId !== m._id && ( // Admin can manage others, but not demote/promote self via this button
+                            <button
+                              className="ml-2 p-1 hover:bg-gray-100 rounded"
+                              onClick={() => {
+                                if (isMemberAlsoAdmin) {
+                                  handleDemoteFromAdmin(m._id);
+                                } else {
+                                  handlePromoteToAdmin(m._id);
+                                }
+                              }}
+                              title={
+                                isMemberAlsoAdmin
+                                  ? "Remove admin role"
+                                  : "Make admin"
                               }
-                            }}
-                            title={
-                              isMemberAdmin ? "Remove admin role" : "Make admin"
-                            }
-                          >
-                            <img
-                              src="/assets/pencil.svg"
-                              alt="Edit role"
-                              className="w-4 h-4"
-                            />
-                          </button>
-                        )}
+                            >
+                              <img
+                                src="/assets/pencil.svg"
+                                alt="Edit role"
+                                className="w-4 h-4"
+                              />
+                            </button>
+                          )}
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {isadmin && m._id !== team?.admin && (
-                        <button
-                          onClick={() => handleRemove(m._id)}
-                          className="text-red-600 hover:underline text-sm"
-                        >
-                          Remove
-                        </button>
-                      )}
+                      {isadmin &&
+                        userId !== m._id && ( // Admin can remove others, but not self via this button
+                          <button
+                            onClick={() => handleRemove(m._id)}
+                            className="text-red-600 hover:underline text-sm"
+                          >
+                            Remove
+                          </button>
+                        )}
                     </div>
                   </li>
                 );
@@ -393,7 +405,7 @@ export default function TeamPage() {
                     <ul className="absolute z-10 bg-white border rounded w-full mt-10 max-h-40 overflow-y-auto shadow">
                       {emailSuggestions.map((user) => (
                         <li
-                          key={user.id} // <-- FIXED: use user.id, not user._id
+                          key={user._id}
                           className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                           onMouseDown={() => handleSuggestionClick(user.email)}
                         >
