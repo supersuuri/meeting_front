@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { verifyToken } from "@/lib/auth";
 import { ObjectId } from "mongodb";
+import mongoose from "mongoose";
 import Team from "@/models/Team";
 
 // Define runtime for this API route
@@ -49,7 +50,14 @@ export async function POST(
 
     // Add user to admins array if not already there
     if (!team.admins.map(String).includes(memberId)) {
-      team.admins.push(memberId);
+      team.admins.push(new ObjectId(memberId)); // Add to admins array
+
+      // Remove the user from the members array, as they are now an admin
+      team.members = team.members.filter(
+        (member_id_in_array: mongoose.Types.ObjectId) =>
+          member_id_in_array.toString() !== memberId
+      );
+
       await team.save();
     }
 
@@ -72,7 +80,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  const { id: teamIdString } = await params; // renamed for clarity
   try {
     const body = await request.json();
     const { memberId } = body;
@@ -87,12 +95,7 @@ export async function DELETE(
     }
 
     await connectToDatabase();
-    const db = (global as any).mongo.db;
-    const teamId = id;
-
-    const team = await db.collection("teams").findOne({
-      _id: new ObjectId(teamId),
-    });
+    const team = await Team.findById(teamIdString); // Use Mongoose model
 
     if (!team || !team.admins) {
       return NextResponse.json(
@@ -109,19 +112,33 @@ export async function DELETE(
       );
     }
 
-    // Remove user from admins array
-    const updatedTeam = await db
-      .collection("teams")
-      .findOneAndUpdate(
-        { _id: new ObjectId(teamId) },
-        { $pull: { admins: new ObjectId(memberId) } },
-        { returnDocument: "after" }
+    // Prevent demoting the last admin
+    if (
+      team.admins.map(String).includes(memberId) &&
+      team.admins.length === 1
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Cannot demote the last admin." },
+        { status: 400 }
       );
+    }
+
+    // Remove user from admins array
+    team.admins = team.admins.filter(
+      (admin_id: mongoose.Types.ObjectId) => admin_id.toString() !== memberId
+    );
+
+    // Add the user to the members array if they are not already there
+    if (!team.members.map(String).includes(memberId)) {
+      team.members.push(new ObjectId(memberId));
+    }
+
+    await team.save();
 
     return NextResponse.json({
       success: true,
-      message: "Admin removed successfully",
-      team: updatedTeam.value,
+      message: "Admin role removed successfully",
+      team,
     });
   } catch (error) {
     console.error("Error removing admin:", error);

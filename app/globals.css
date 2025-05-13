@@ -141,14 +141,37 @@
 
 @layer components {
   .menu-item-card {
-    @apply p-10 flex flex-col gap-5 items-center rounded-3xl cursor-pointer transition delay-75 duration-700 ease-in-out hover:-translate-y-1 scale-90 hover:scale-110 
+    @apply p-10 flex flex-col gap-5 items-center rounded-3xl cursor-pointer transition delay-75 duration-700 ease-in-out hover:-translate-y-1 scale-90 hover:scale-110;
   }
   .inputs {
-    @apply !bg-gray-100 focus-visible:!ring-0 focus-visible:!ring-offset-0 !rounded-4xl 
+    @apply !bg-gray-100 focus-visible:!ring-0 focus-visible:!ring-offset-0 !rounded-4xl;
   }
-  
 }
 
+@layer utilities {
+  /* 1. preserve-3d + backface hidden */
+  .transform-preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  /* 2. flip-in animation */
+  @keyframes flipInY {
+    from {
+      transform: perspective(600px) rotateY(90deg);
+      opacity: 0;
+    }
+    to {
+      transform: perspective(600px) rotateY(0deg);
+      opacity: 1;
+    }
+  }
+  .animate-flipInY {
+    animation: flipInY 0.6s ease-out both;
+  }
+}
 
 /* ======== stream css overrides ======== */
 .str-video__call-stats {

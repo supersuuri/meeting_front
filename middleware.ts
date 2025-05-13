@@ -1,24 +1,34 @@
 // middleware.ts
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "./lib/jwt"; // Create this simple utility
+import { verifyTokenEdge } from "./lib/jwt"; // Changed from verifyToken
 
 export async function middleware(request: NextRequest) {
-  // Get the token from cookies or headers
   const token = request.cookies.get("token")?.value;
 
   if (!token) {
-    // Redirect to login or return unauthorized
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   try {
-    // Verify JWT without database access
-    const payload = verifyToken(token);
+    const payload = await verifyTokenEdge(token); // Use the new Edge-compatible function
 
-    // Continue to the protected route
+    if (!payload) {
+      console.log("Middleware: Invalid or expired token (Edge verification)");
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // Optionally, you can add the payload to headers if needed by your pages
+    // const requestHeaders = new Headers(request.headers);
+    // requestHeaders.set('x-user-id', payload.id);
+    // return NextResponse.next({
+    //   request: {
+    //     headers: requestHeaders,
+    //   },
+    // });
+
     return NextResponse.next();
   } catch (error) {
-    // Invalid token
+    console.error("Middleware error:", error);
     return NextResponse.redirect(new URL("/login", request.url));
   }
 }

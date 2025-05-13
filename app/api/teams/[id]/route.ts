@@ -68,7 +68,6 @@ export async function PUT(
 
   await connectToDatabase();
 
-  // Validate the id
   if (!teamId || !mongoose.Types.ObjectId.isValid(teamId)) {
     return NextResponse.json(
       { message: "Invalid or missing team ID" },
@@ -79,12 +78,12 @@ export async function PUT(
   const body = await req.json();
   const { name, description } = body;
 
-  // Only allow the admin to update
   const team = await Team.findById(teamId);
   if (!team) {
     return NextResponse.json({ message: "Team not found" }, { status: 404 });
   }
-  if (team.admin.toString() !== decoded.id) {
+  // Only allow admins to update
+  if (!team.admins || !team.admins.map(String).includes(decoded.id)) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
@@ -122,7 +121,6 @@ export async function DELETE(
 
     await connectToDatabase();
 
-    // Only allow admin to delete the team
     const team = await Team.findById(id);
     if (!team) {
       return NextResponse.json(
@@ -130,7 +128,8 @@ export async function DELETE(
         { status: 404 }
       );
     }
-    if (team.admin.toString() !== decoded.id) {
+    // Only allow admins to delete the team
+    if (!team.admins || !team.admins.map(String).includes(decoded.id)) {
       return NextResponse.json(
         { success: false, message: "Forbidden" },
         { status: 403 }
@@ -151,9 +150,11 @@ export async function DELETE(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string; memberId: string }> }
+  {
+    params: paramsPromise,
+  }: { params: Promise<{ id: string; memberId: string }> }
 ) {
-  const { id: teamId, memberId } = await params;
+  const { id: teamId, memberId } = await paramsPromise; // Await paramsPromise
   const auth = req.headers.get("authorization") || "";
   if (!auth.startsWith("Bearer ")) {
     return NextResponse.json(
@@ -171,10 +172,13 @@ export async function PATCH(
 
   await connectToDatabase();
 
-  // Validate the id
-  if (!teamId || !mongoose.Types.ObjectId.isValid(teamId)) {
+  if (
+    !teamId ||
+    !mongoose.Types.ObjectId.isValid(teamId) ||
+    !mongoose.Types.ObjectId.isValid(memberId)
+  ) {
     return NextResponse.json(
-      { success: false, message: "Invalid or missing team ID" },
+      { success: false, message: "Invalid or missing team ID or member ID" },
       { status: 400 }
     );
   }
@@ -187,17 +191,17 @@ export async function PATCH(
     );
   }
 
-  // Only team admin can add admins
-  if (team.admin.toString() !== decoded.id) {
+  // Only team admins can add other admins using this route
+  if (!team.admins || !team.admins.map(String).includes(decoded.id)) {
     return NextResponse.json(
-      { success: false, message: "Only team admin can manage admin roles" },
+      { success: false, message: "Only team admins can manage admin roles" },
       { status: 403 }
     );
   }
 
   // Add user to admins array if not already there
   if (!team.admins.map(String).includes(memberId)) {
-    team.admins.push(memberId);
+    team.admins.push(new mongoose.Types.ObjectId(memberId)); // Ensure it's an ObjectId
     await team.save();
   }
 

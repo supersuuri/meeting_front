@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react"; // Added useMemo
 import { useAuth } from "@/context/AuthContext";
 import Loading from "@/components/Loading";
 import TeamGanttChart from "@/components/TeamGanttChart";
@@ -24,13 +24,11 @@ interface Member {
   _id: string;
   email: string;
   username?: string;
-  id?: string; // <-- add this line
 }
 
 interface Team {
   _id: string;
   name: string;
-  admin: string; // Represents the primary admin or owner
   admins?: string[]; // Represents a list of additional admin user IDs
   members: string[];
   description?: string;
@@ -41,7 +39,7 @@ interface MembersResponse {
 }
 
 export default function TeamPage() {
-  const { token, isLoading, isAuthenticated } = useAuth();
+  const { token, isLoading, isAuthenticated, user: currentUser } = useAuth(); // Assuming user object from useAuth has id
   const router = useRouter();
   const { id: teamId } = useParams() as { id: string };
   const [team, setTeam] = useState<Team | null>(null);
@@ -57,6 +55,7 @@ export default function TeamPage() {
   const [newMemberRole, setNewMemberRole] = useState<"member" | "admin">(
     "member"
   );
+  const [emailSearchKey, setEmailSearchKey] = useState(Date.now()); // Key to reset EmailSearch
 
   // 1. fetchData only fetches the team
   const fetchData = useCallback(async () => {
@@ -136,7 +135,9 @@ export default function TeamPage() {
       }
       setNewEmail("");
       setNewMemberRole("member");
-      await fetchData();
+      setShowAddMemberModal(false); // Close the modal on success
+      setEmailSearchKey(Date.now()); // Reset EmailSearch component
+      await fetchData(); // Re-fetch data to update the member list
     } catch (e: any) {
       setError(e.message);
       console.error(e);
@@ -198,14 +199,24 @@ export default function TeamPage() {
     setShowSuggestions(false);
   };
 
-  // Helper: is current user the team admin?
-  const isadmin =
-    team &&
-    token &&
-    (String(team.admin) === (JSON.parse(atob(token.split(".")[1]))?.id || "") ||
-      team.admins
-        ?.map(String)
-        .includes(JSON.parse(atob(token.split(".")[1]))?.id || ""));
+  const userId = useMemo(() => {
+    // Prefer getting userId from auth context if available and reliable
+    if (currentUser?.id) return currentUser.id;
+    if (token && token.includes(".")) {
+      try {
+        return JSON.parse(atob(token.split(".")[1]))?.id || "";
+      } catch (e) {
+        console.error("Failed to parse token:", e);
+        return "";
+      }
+    }
+    return "";
+  }, [token, currentUser]);
+
+  const isadmin = useMemo(() => {
+    if (!team || !userId) return false;
+    return team.admins?.map(String).includes(userId);
+  }, [team, userId]);
 
   const handlePromoteToAdmin = async (memberId: string) => {
     if (!token) return;
@@ -240,11 +251,12 @@ export default function TeamPage() {
         body: JSON.stringify({ memberId }),
       });
       if (!res.ok) throw new Error("Failed to demote member");
-      alert("Admin rights removed!");
+      // Optionally: Show a toast or console message here
+      console.log("Admin rights removed!");
       await fetchData();
     } catch (e) {
-      alert("Failed to demote member.");
-      console.error(e);
+      // Optionally: Handle the error with a toast or log
+      console.error("Failed to demote member:", e);
     } finally {
       setLoading(false);
     }
@@ -290,9 +302,9 @@ export default function TeamPage() {
             </div>
             <ul className="space-y-2 mb-4">
               {members.map((m) => {
-                const isMemberAdmin =
-                  team?.admins?.map(String).includes(String(m._id)) ||
-                  String(team?.admin) === String(m._id);
+                const isMemberAlsoAdmin = team?.admins
+                  ?.map(String)
+                  .includes(String(m._id));
                 return (
                   <li
                     key={m._id}
@@ -305,40 +317,44 @@ export default function TeamPage() {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span>{m.email}</span>
                         <span className="ml-2 text-xs font-semibold">
-                          ({isMemberAdmin ? "admin" : "member"})
+                          ({isMemberAlsoAdmin ? "admin" : "member"})
                         </span>
-                        {isadmin && m._id !== team?.admin && (
-                          <button
-                            className="ml-2 p-1 hover:bg-gray-100 rounded"
-                            onClick={() => {
-                              if (isMemberAdmin) {
-                                handleDemoteFromAdmin(m._id);
-                              } else {
-                                handlePromoteToAdmin(m._id);
+                        {isadmin &&
+                          userId !== m._id && ( // Admin can manage others, but not demote/promote self via this button
+                            <button
+                              className="ml-2 p-1 hover:bg-gray-100 rounded"
+                              onClick={() => {
+                                if (isMemberAlsoAdmin) {
+                                  handleDemoteFromAdmin(m._id);
+                                } else {
+                                  handlePromoteToAdmin(m._id);
+                                }
+                              }}
+                              title={
+                                isMemberAlsoAdmin
+                                  ? "Remove admin role"
+                                  : "Make admin"
                               }
-                            }}
-                            title={
-                              isMemberAdmin ? "Remove admin role" : "Make admin"
-                            }
-                          >
-                            <img
-                              src="/assets/pencil.svg"
-                              alt="Edit role"
-                              className="w-4 h-4"
-                            />
-                          </button>
-                        )}
+                            >
+                              <img
+                                src="/assets/pencil.svg"
+                                alt="Edit role"
+                                className="w-4 h-4"
+                              />
+                            </button>
+                          )}
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {isadmin && m._id !== team?.admin && (
-                        <button
-                          onClick={() => handleRemove(m._id)}
-                          className="text-red-600 hover:underline text-sm"
-                        >
-                          Remove
-                        </button>
-                      )}
+                      {isadmin &&
+                        userId !== m._id && ( // Admin can remove others, but not self via this button
+                          <button
+                            onClick={() => handleRemove(m._id)}
+                            className="text-red-600 hover:underline text-sm"
+                          >
+                            Remove
+                          </button>
+                        )}
                     </div>
                   </li>
                 );
@@ -346,63 +362,92 @@ export default function TeamPage() {
             </ul>
             <Dialog
               open={showAddMemberModal}
-              onOpenChange={setShowAddMemberModal}
+              onOpenChange={(isOpen) => {
+                setShowAddMemberModal(isOpen);
+                if (!isOpen) {
+                  setError(null);
+                  setNewEmail("");
+                  setNewMemberRole("member"); // Reset role as well
+                  setEmailSearchKey(Date.now()); // Generate new key to reset EmailSearch
+                }
+              }}
             >
-              <DialogContent>
+              <DialogContent className="bg-white p-6 rounded-lg shadow-xl sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Add Member</DialogTitle>
-                  <DialogDescription>
-                    Enter the email address and select a role for the new team
-                    member.
+                  <DialogTitle className="text-2xl font-semibold text-gray-900">
+                    Add New Member
+                  </DialogTitle>
+                  <DialogDescription className="mt-1 text-sm text-gray-600">
+                    Search for a user by their email address and assign them a
+                    role within the team.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-col gap-2">
-                  <EmailSearch
-                    onUserSelect={(user) => {
-                      setNewEmail(user.email);
-                      setShowSuggestions(false);
-                    }}
-                    placeholder="Search user by email"
-                  />
-                  {newEmail && (
-                    <div className="text-sm text-gray-700">
-                      Selected:{" "}
-                      <span className="font-semibold">{newEmail}</span>
-                    </div>
-                  )}
-                  <select
-                    value={newMemberRole}
-                    onChange={(e) =>
-                      setNewMemberRole(e.target.value as "member" | "admin")
-                    }
-                    onBlur={() =>
-                      setTimeout(() => setShowSuggestions(false), 100)
-                    }
-                  >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <button
-                    onClick={handleAdd}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    disabled={loading || !newEmail}
-                  >
-                    Add
-                  </button>
-                  {showSuggestions && emailSuggestions.length > 0 && (
-                    <ul className="absolute z-10 bg-white border rounded w-full mt-10 max-h-40 overflow-y-auto shadow">
-                      {emailSuggestions.map((user) => (
-                        <li
-                          key={user.id} // <-- FIXED: use user.id, not user._id
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                          onMouseDown={() => handleSuggestionClick(user.email)}
-                        >
-                          {user.email}
-                        </li>
-                      ))}
-                    </ul>
+
+                <div className="mt-6 space-y-6">
+                  {" "}
+                  {/* Increased spacing */}
+                  <div>
+                    <label
+                      htmlFor="email-search-modal"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      User Email
+                    </label>
+                    <EmailSearch
+                      key={emailSearchKey} // Add key to control re-rendering and reset
+                      onUserSelect={(user) => {
+                        setNewEmail(user.email);
+                      }}
+                      placeholder="Search by email..."
+                      // Ensure EmailSearch's input field is styled appropriately, e.g., with Tailwind classes like:
+                      // className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="member-role-modal"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Role
+                    </label>
+                    <select
+                      id="member-role-modal"
+                      value={newMemberRole}
+                      onChange={(e) =>
+                        setNewMemberRole(e.target.value as "member" | "admin")
+                      }
+                      className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 bg-white"
+                    >
+                      <option value="member">Member</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  {error && ( // Display errors within the modal
+                    <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
+                      {error}
+                    </p>
                   )}
                 </div>
+
+                <DialogFooter className="mt-8 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={handleAdd}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                    disabled={loading || !newEmail}
+                  >
+                    {loading ? "Adding..." : "Add Member"}
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 sm:mt-0 sm:w-auto sm:text-sm"
+                    onClick={() => {
+                      setShowAddMemberModal(false); // This will trigger onOpenChange(false)
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>

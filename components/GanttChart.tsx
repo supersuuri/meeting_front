@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface ProjectTask {
   _id: string;
@@ -36,6 +36,9 @@ interface GanttTask extends Task {
 }
 
 const GanttChart = () => {
+  const params = useParams();
+  const teamId = params?.teamId;
+  const router = useRouter();
   const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [newTask, setNewTask] = useState({
     name: "",
@@ -48,9 +51,9 @@ const GanttChart = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
+    if (!teamId) return setError("No team selected");
     const storedToken = localStorage.getItem("token");
     if (storedToken) {
       setToken(storedToken);
@@ -58,11 +61,11 @@ const GanttChart = () => {
     } else {
       setError("Please log in to view tasks");
     }
-  }, []);
+  }, [teamId]);
 
   const fetchTasks = async (authToken: string) => {
     try {
-      const response = await axios.get("/api/tasks", {
+      const response = await axios.get(`/api/teams/${teamId}/tasks`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       if (response.data.success) {
@@ -80,7 +83,7 @@ const GanttChart = () => {
       } else {
         setError(response.data.message);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to fetch tasks");
     }
   };
@@ -90,25 +93,30 @@ const GanttChart = () => {
       setError("Please log in to add tasks");
       return;
     }
+
     try {
-      const response = await axios.post("/api/tasks", newTask, {
+      const response = await axios.post(`/api/teams/${teamId}/tasks`, newTask, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.data.success) {
-        setNewTask({
-          name: "",
-          startDate: "",
-          endDate: "",
-          progress: 0,
-          type: "task",
-        });
-        setIsModalOpen(false);
-        fetchTasks(token);
-      } else {
-        setError(response.data.message);
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Unknown API error");
       }
-    } catch (err) {
-      setError("Failed to add task");
+
+      setNewTask({
+        name: "",
+        startDate: "",
+        endDate: "",
+        progress: 0,
+        type: "task",
+      });
+      setIsModalOpen(false);
+      await fetchTasks(token);
+    } catch (err: any) {
+      console.error("addTask error:", err.response || err);
+      const msg =
+        err.response?.data?.message || err.message || "Failed to add task";
+      setError(msg);
     }
   };
 
@@ -119,7 +127,7 @@ const GanttChart = () => {
     }
     try {
       const response = await axios.patch(
-        `/api/tasks/${editTask.id}`,
+        `/api/teams/${teamId}/tasks/${editTask.id}`,
         {
           name: editTask.name,
           startDate: editTask.start.toISOString().split("T")[0],
@@ -136,7 +144,7 @@ const GanttChart = () => {
       } else {
         setError(response.data.message);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to update task");
     }
   };
@@ -182,15 +190,16 @@ const GanttChart = () => {
       return;
     }
     try {
-      const response = await axios.delete(`/api/tasks/${taskId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.delete(
+        `/api/teams/${teamId}/tasks/${taskId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       if (response.data.success) {
         fetchTasks(token);
       } else {
         setError(response.data.message);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to delete task");
     }
   };
@@ -202,13 +211,10 @@ const GanttChart = () => {
     const endDate = new Date(end);
     const today = new Date();
 
-    // If task hasn't started yet
     if (today < startDate) return 0;
 
-    // If task is completed or past due
     if (today >= endDate) return 100;
 
-    // Calculate progress percentage
     const totalDuration = endDate.getTime() - startDate.getTime();
     const completedDuration = today.getTime() - startDate.getTime();
     const progress = Math.round((completedDuration / totalDuration) * 100);
@@ -228,7 +234,7 @@ const GanttChart = () => {
       </button>
       <button
         onClick={() => router.push("/teams")}
-        className="bg-blue-500 text-white px-4 py-2 rounded ml-2" // Added some styling
+        className="bg-blue-500 text-white px-4 py-2 rounded ml-2"
       >
         Back to Teams
       </button>
@@ -275,9 +281,7 @@ const GanttChart = () => {
                     onSelect={(date) =>
                       setNewTask({
                         ...newTask,
-                        startDate: date
-                          ? date.toLocaleDateString("en-CA") // Uses YYYY-MM-DD format regardless of timezone
-                          : "",
+                        startDate: date ? date.toLocaleDateString("en-CA") : "",
                       })
                     }
                     initialFocus
@@ -370,7 +374,7 @@ const GanttChart = () => {
           barProgressColor="#4caf50"
           barBackgroundColor="#2196f3"
           milestoneBackgroundColor="#f44336"
-          todayColor="red" // Add this line to show today's date
+          todayColor="red"
           onClick={(task) =>
             openEditModal({
               id: task.id,

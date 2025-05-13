@@ -10,11 +10,24 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
 
     // Check for user
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select("+password"); // Ensure isEmailVerified is selected by default or add it explicitly if not.
+    // By default, fields are selected unless schema has `select: false` for the field itself.
+    // Our User model has `isEmailVerified` selected by default.
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Invalid credentials" },
         { status: 401 }
+      );
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please verify your email before logging in.",
+        },
+        { status: 403 } // 403 Forbidden is appropriate here
       );
     }
 
@@ -28,9 +41,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Create token
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error(
+        "CRITICAL: JWT_SECRET is not defined for token signing in login."
+      );
+      throw new Error("Server configuration error: JWT_SECRET not set.");
+    }
     const token = jwt.sign(
-      { id: user._id }, // Remove iat here
-      process.env.JWT_SECRET || "your-secret-key",
+      { id: user._id },
+      secret, // Use the secret from env
       {
         expiresIn: "1h",
       }
@@ -47,6 +67,7 @@ export async function POST(req: NextRequest) {
           firstName: user.firstName,
           lastName: user.lastName,
           imageUrl: user.imageUrl,
+          isEmailVerified: user.isEmailVerified, // Include this in the response
         },
       },
       {
