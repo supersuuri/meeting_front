@@ -157,33 +157,42 @@ const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
   addTask.loading = false;
 
   const updateTask = async () => {
-    if (!token || !editTask) {
+    if (!token || !editTask) { // editTask is still needed for its ID
       setError("Please log in to update tasks");
       return;
     }
     try {
+      // Calculate progress based on the current (potentially edited) dates in newTask
+      const currentProgress = calculateProgress(newTask.startDate, newTask.endDate);
+
+      const payload = {
+        name: newTask.name,
+        startDate: newTask.startDate, // newTask.startDate is already a 'YYYY-MM-DD' string
+        endDate: newTask.endDate,     // newTask.endDate is already a 'YYYY-MM-DD' string
+        progress: currentProgress,    // Send the freshly calculated progress
+        type: newTask.type,
+        assignedTo: newTask.assignedTo || undefined, // Send undefined if empty string for "Unassigned"
+      };
+
       const response = await axios.patch(
-        `/api/teams/${teamId}/tasks/${editTask.id}`,
-        {
-          name: editTask.name,
-          startDate: editTask.start.toISOString().split("T")[0],
-          endDate: editTask.end.toISOString().split("T")[0],
-          progress: editTask.progress,
-          type: editTask.type,
-          assignedTo: editTask.assignedTo,
-        },
+        `/api/teams/${teamId}/tasks/${editTask.id}`, // URL uses the ID from the original task
+        payload, // Payload now uses the edited data from newTask
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (response.data.success) {
         setEditTask(null);
         setIsModalOpen(false);
-        fetchTasks(token);
+        await fetchTasks(token); // Await fetchTasks to ensure data is fresh
         toast.success("Task updated successfully");
       } else {
-        setError(response.data.message);
+        setError(response.data.message || "Failed to update task");
+        toast.error(response.data.message || "Failed to update task");
       }
-    } catch (err) {
-      setError("Failed to update task");
+    } catch (err: any) {
+      console.error("Update task error:", err.response?.data || err.message || err);
+      const message = err.response?.data?.message || err.message || "Failed to update task";
+      setError(message);
+      toast.error(message);
     }
   };
 
