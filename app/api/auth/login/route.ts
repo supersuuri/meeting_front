@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "Please verify your email before logging in.",
+          message:
+            "Please verify your email before logging in. A code was sent to your email.",
+          actionRequired: "verifyEmail", // Add this to help frontend
+          email: user.email, // Send email back to redirect to OTP page
         },
         { status: 403 } // 403 Forbidden is appropriate here
       );
@@ -61,13 +64,14 @@ export async function POST(req: NextRequest) {
         success: true,
         token,
         user: {
-          id: user._id,
+          _id: user._id,
+          id: user._id.toString(), // Add this line
           username: user.username,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
           imageUrl: user.imageUrl,
-          isEmailVerified: user.isEmailVerified, // Include this in the response
+          isEmailVerified: user.isEmailVerified,
         },
       },
       {

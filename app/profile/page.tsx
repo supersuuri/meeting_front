@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AvatarSelector from "@/components/AvatarSelector";
+import { Input }from "@/components/ui/input";
 
 export default function ProfilePage() {
   const [user, setUser] = useState({
@@ -270,7 +271,7 @@ export default function ProfilePage() {
             </form>
           ) : (
             <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex flex-col items-center gap-4 md:w-1/3">
+              <div className="flex flex-col items-center gap-4 md:w-1/3 my-auto">
                 <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-blue-100 shadow-lg">
                   <Image
                     src={user.profileImage}
@@ -303,6 +304,12 @@ export default function ProfilePage() {
                   <p className="text-sm text-gray-500">
                     Member since {user.joined}
                   </p>
+                </div>
+                <div className="border-t border-gray-200 mb-2 mt-4 pt-4">
+                  <h3 className="text-x font-semibold text-gray-700 my-2">Description</h3>
+                  <div className="border-1 rounded-lg h-32 my-2">
+                    {/* <Input type="text" /> */}
+                  </div>
                 </div>
               </div>
             </div>

@@ -12,7 +12,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false); // Added for "Remember Me" checkbox
+  const [rememberMe, setRememberMe] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
 
@@ -25,7 +25,18 @@ const LoginPage = () => {
       toast.success("Login successful");
       router.push("/");
     } catch (error: any) {
-      toast.error(error.message || "Login failed");
+      // Check if the error indicates email verification is needed
+      if (error.actionRequired === "verifyEmail" && error.email) {
+        toast.error(error.message || "Please verify your email.");
+        // Redirect to the OTP verification page, passing the email
+        router.push(
+          `/verify-email-otp?email=${encodeURIComponent(error.email)}`
+        );
+      } else {
+        toast.error(
+          error.message || "Login failed. Please check your credentials."
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -49,7 +60,6 @@ const LoginPage = () => {
             Log in to dive into dynamic content and global communities beyond
             imagination.
           </p>
-          
         </div>
       </div>
 
@@ -73,7 +83,7 @@ const LoginPage = () => {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="User Name"
+                placeholder="Email"
                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
                 required
               />

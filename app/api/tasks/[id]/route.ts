@@ -34,7 +34,7 @@ export async function DELETE(
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = await verifyToken(token);
+    const decoded = verifyToken(token);
 
     if (!decoded || !decoded.id) {
       return NextResponse.json(
@@ -88,7 +88,7 @@ export async function PATCH(
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = await verifyToken(token);
+    const decoded = verifyToken(token);
 
     if (!decoded || !decoded.id) {
       return NextResponse.json(

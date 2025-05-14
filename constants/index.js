@@ -5,11 +5,11 @@ export const navLinks = [
     label: "Home",
   },
 
-  {
-    imgURL: "/assets/upcoming.svg",
-    route: "/upcoming",
-    label: "Upcoming",
-  },
+  // {
+  //   imgURL: "/assets/upcoming.svg",
+  //   route: "/upcoming",
+  //   label: "Upcoming",
+  // },
   {
     imgURL: "/assets/previous.svg",
     route: "/previous",
