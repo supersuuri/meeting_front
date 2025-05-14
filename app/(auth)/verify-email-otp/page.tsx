@@ -1,230 +1,111 @@
-"use client";
+"use server";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
-import Link from "next/link";
-import Image from "next/image"; // Added for illustration panel
-import { useAuth } from "@/context/AuthContext"; // Import useAuth
+import nodemailer from "nodemailer";
 
-function VerifyOtpContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const emailFromQuery = searchParams?.get("email");
-  const auth = useAuth(); // Get auth context
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_SERVER_HOST || "smtp.ethereal.email",
+  port: parseInt(process.env.EMAIL_SERVER_PORT || "587"),
+  secure: process.env.EMAIL_SERVER_SECURE === "true",
+  auth: {
+    user: process.env.EMAIL_SERVER_USER,
+    pass: process.env.EMAIL_SERVER_PASSWORD,
+  },
+});
 
-  const [otp, setOtp] = useState("");
-  const [email, setEmail] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-
-  useEffect(() => {
-    if (emailFromQuery) {
-      setEmail(emailFromQuery);
+// Verify SMTP connection
+if (process.env.NODE_ENV !== "test") {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error("SMTP configuration error:", error);
     } else {
-      // Optional: redirect if email is not in query, or show an error
-      // toast.error("Email not provided for verification.");
-      // router.push("/login");
+      console.log("SMTP server is ready to send emails");
     }
-  }, [emailFromQuery, router]);
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !otp || otp.length !== 6) {
-      toast.error(
-        "Please enter a valid 6-digit OTP and ensure email is present."
-      );
-      return;
-    }
-    setIsVerifying(true);
-    try {
-      const res = await fetch("/api/auth/verify-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code: otp }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success && data.token && data.user) {
-        toast.success(
-          data.message || "Email verified successfully! You are now logged in."
-        );
-        // Use AuthContext to set user data and token, which also handles localStorage
-        auth.setAuthData(data.token, data.user);
-        // The server has already set the HttpOnly cookie.
-        // Redirect to the home page. AuthProvider on the home page will handle auth state.
-        router.push("/");
-      } else if (res.ok && data.success) {
-        // Verification was successful, but token/user data wasn't returned (e.g., server config issue for token)
-        toast.success(
-          data.message ||
-            "Email verified successfully! Please log in to continue."
-        );
-        router.push("/login"); // Fallback to login page
-      } else {
-        toast.error(data.message || "Verification failed.");
-      }
-    } catch (error) {
-      toast.error("An error occurred during verification.");
-      console.error("Verification error:", error);
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (!email) {
-      toast.error("Email address is missing to resend code.");
-      return;
-    }
-    setIsResending(true);
-    try {
-      const res = await fetch("/api/auth/resend-verification-email", {
-        // Or your potentially renamed route
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success(data.message || "A new verification code has been sent.");
-      } else {
-        toast.error(data.message || "Failed to resend code.");
-      }
-    } catch (error) {
-      toast.error("An error occurred while resending the code.");
-      console.error("Resend code error:", error);
-    } finally {
-      setIsResending(false);
-    }
-  };
-
-  if (!emailFromQuery) {
-    return (
-      <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
-        {/* Illustration Panel - Consistent with login/register */}
-        <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#4da1e6] to-[#3a87c9] text-white p-10">
-          <div className="space-y-4 max-w-sm">
-            <Image
-              src="/assets/meeting-picture-background.svg" // Assuming you want the same image
-              alt="Web illustration"
-              width={300}
-              height={300}
-              className="mt-6"
-            />
-            <h2 className="text-4xl font-bold">Explore the Open Web</h2>
-            <p className="opacity-90">
-              Secure your account to continue exploring dynamic content and
-              global communities.
-            </p>
-          </div>
-        </div>
-        {/* Form Panel */}
-        <div className="flex items-center justify-center p-8 bg-gray-50">
-          <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg transform-preserve-3d backface-hidden animate-flipInY">
-            <h2 className="text-3xl font-semibold text-gray-800 text-center">
-              Email Required
-            </h2>
-            <p className="text-center text-gray-600">
-              No email address was provided for verification. Please try
-              registering or logging in again.
-            </p>
-            <Link
-              href="/login"
-              className="block w-full py-3 bg-gradient-to-r from-[#4da1e6] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition text-center"
-            >
-              Go to Login
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
-      {/* Illustration / Welcome Panel */}
-      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#4da1e6] to-[#3a87c9] text-white p-10">
-        <div className="space-y-4 max-w-sm">
-          <Image
-            src="/assets/meeting-picture-background.svg" // Assuming you want the same image
-            alt="Web illustration"
-            width={300}
-            height={300}
-            className="mt-6"
-          />
-          <h2 className="text-4xl font-bold">Verify Your Account</h2>
-          <p className="opacity-90">
-            Just one more step to secure your access. Enter the code sent to
-            your email.
-          </p>
-        </div>
-      </div>
-
-      {/* Form Panel */}
-      <div className="flex items-center justify-center p-8 bg-gray-50">
-        <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg space-y-6 transform-preserve-3d backface-hidden animate-flipInY">
-          <h2 className="text-3xl font-semibold text-gray-800 text-center">
-            Verify Your Email
-          </h2>
-          <p className="text-center text-gray-600">
-            A 6-digit verification code has been sent to{" "}
-            <strong className="text-gray-700">{email}</strong>. Please enter it
-            below.
-          </p>
-          <form onSubmit={handleVerify} className="space-y-5">
-            <div>
-              <label htmlFor="otp" className="sr-only">
-                Verification Code
-              </label>
-              <input
-                id="otp"
-                name="otp"
-                type="text"
-                maxLength={6}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700 text-center text-lg"
-                placeholder=""
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isVerifying || otp.length !== 6}
-              className="w-full py-3 bg-gradient-to-r from-[#4da1e6] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition disabled:opacity-70"
-            >
-              {isVerifying ? "Verifying..." : "Verify Email"}
-            </button>
-          </form>
-          <div className="text-center">
-            <button
-              onClick={handleResendCode}
-              disabled={isResending}
-              className="text-sm text-[#4da1e6] hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isResending ? "Sending..." : "Didn't receive the code? Resend."}
-            </button>
-          </div>
-          <p className="text-sm text-center text-gray-600">
-            Changed your mind?{" "}
-            <Link
-              href="/login"
-              className="text-[#4da1e6] font-medium hover:underline"
-            >
-              Back to Login
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  });
 }
 
-export default function VerifyOtpPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <VerifyOtpContent />
-    </Suspense>
-  );
+const logoUrl = "https://meeting-app-navy.vercel.app/assets/logo.png";
+
+// ✅ Send verification email
+export async function sendVerificationCodeEmail(
+  email: string,
+  code: string,
+  username: string
+) {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: "Your Email Verification Code for Tuluvluy",
+    text: `Your verification code is: ${code}\nThis code will expire in 1 hour. Your username is: ${username}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; background-color: #f9f9fb; padding: 40px 0; text-align: center;">
+        <div style="background-color: #ffffff; margin: 0 auto; padding: 40px 20px; max-width: 500px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
+          <img src="${logoUrl}" alt="Tuluvluy Logo" style="width: 160px; margin-bottom: 20px;" />
+          <h2 style="margin-bottom: 20px; color: #000000;">Verify your Tuluvluy sign-up</h2>
+          <p style="color: #000000;">We have received a sign-up attempt with the following code. Please enter it in the browser window where you started signing up for Tuluvluy.</p>
+          <div style="font-size: 32px; font-weight: bold; background-color: #f0f0f0; padding: 16px; margin: 30px auto; width: fit-content; border-radius: 8px; color: #000000;">
+            ${code}
+          </div>
+          <p style="color: #000000;">If you did not attempt to sign up but received this email, please disregard it.<br/>This code will remain active for <strong>1 hour</strong>.</p>
+        </div>
+        <div style="margin-top: 20px; color: #aaa; font-size: 12px;">
+          &copy; ${new Date().getFullYear()} Tuluvluy. All rights reserved.
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Verification code email sent: %s", info.messageId);
+    if (nodemailer.getTestMessageUrl(info)) {
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+    }
+  } catch (error) {
+    console.error("Error sending verification code email:", error);
+    throw new Error("Could not send verification code email.");
+  }
+}
+
+// 🔄 Send password reset email (with black text and larger logo)
+export async function sendPasswordResetCodeEmail(
+  email: string,
+  name: string,
+  code: string,
+  username: string
+) {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: "Your Password Reset Code for Tuluvluy",
+    text: `Hello ${name},\n\nYour password reset code is: ${code}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nThanks,\nThe Tuluvluy Team. Your username is: ${username}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; background-color: #f9f9fb; padding: 40px 0; text-align: center;">
+        <div style="background-color: #ffffff; margin: 0 auto; padding: 40px 20px; max-width: 500px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
+          <img src="${logoUrl}" alt="Tuluvluy Logo" style="width: 160px; margin-bottom: 20px;" />
+          <h2 style="margin-bottom: 20px; color: #000000;">Reset your Tuluvluy password</h2>
+          <p style="color: #000000;">Hi <strong>${name}</strong>,</p>
+          <p style="color: #000000;">You requested to reset your password. Use the following code:</p>
+          <div style="font-size: 32px; font-weight: bold; background-color: #f0f0f0; padding: 16px; margin: 30px auto; width: fit-content; border-radius: 8px; color: #000000;">
+            ${code}
+          </div>
+          <p style="color: #000000;">This code is valid for <strong>10 minutes</strong>.</p>
+          <p style="color: #000000;">If you didn’t request a password reset, you can safely ignore this email.</p>
+        </div>
+        <div style="margin-top: 20px; color: #aaa; font-size: 12px;">
+          &copy; ${new Date().getFullYear()} Tuluvluy. All rights reserved.
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Password reset code email sent: %s", info.messageId);
+    if (nodemailer.getTestMessageUrl(info)) {
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+    }
+  } catch (error) {
+    console.error("Error sending password reset code email:", error);
+    throw new Error("Could not send password reset code email.");
+  }
 }

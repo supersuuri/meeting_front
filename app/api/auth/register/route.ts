@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Send verification email with the code
-    await sendVerificationCodeEmail(user.email, emailVerificationCode);
+    sendVerificationCodeEmail(user.email, emailVerificationCode, user.username);
 
     return NextResponse.json(
       {
