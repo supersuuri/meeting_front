@@ -14,7 +14,7 @@ const ForgotPasswordPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    toast.dismiss(); // Dismiss any existing toasts
+    toast.dismiss();
 
     try {
       const res = await fetch("/api/auth/forgot-password", {
@@ -28,8 +28,6 @@ const ForgotPasswordPage = () => {
         toast.success(
           data.message || "Password reset code sent if email is registered."
         );
-        // router.push("/verify-reset-code"); // Redirect to a new page to enter the code
-        // You might want to pass the email to the next page, e.g., via query params or state management
         router.push(`/verify-reset-code?email=${encodeURIComponent(email)}`);
       } else {
         toast.error(data.message || "Failed to send password reset link.");
@@ -102,7 +100,7 @@ const ForgotPasswordPage = () => {
               href="/login"
               className="text-[#4da1e6] font-medium hover:underline"
             >
-              Sign In
+              Login
             </Link>
           </p>
         </div>

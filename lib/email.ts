@@ -38,12 +38,12 @@ export async function sendVerificationCodeEmail(
       <div style="font-family: Arial, sans-serif; background-color: #f9f9fb; padding: 40px 0; text-align: center;">
         <div style="background-color: #ffffff; margin: 0 auto; padding: 40px 20px; max-width: 500px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
           <img src="${logoUrl}" alt="Tuluvluy Logo" style="width: 50px; margin-bottom: 20px;" />
-          <h2 style="margin-bottom: 20px; color: #333;">Verify your Tuluvluy sign-up</h2>
-          <p style="color: #666;">We have received a sign-up attempt with the following code. Please enter it in the browser window where you started signing up for Tuluvluy.</p>
-          <div style="font-size: 32px; font-weight: bold; background-color: #f0f0f0; padding: 16px; margin: 30px auto; width: fit-content; border-radius: 8px;">
+          <h2 style="margin-bottom: 20px; color: #000000;">Verify your Tuluvluy sign-up</h2>
+          <p style="color: #000000;">We have received a sign-up attempt with the following code. Please enter it in the browser window where you started signing up for Tuluvluy.</p>
+          <div style="font-size: 32px; font-weight: bold; background-color: #f0f0f0; padding: 16px; margin: 30px auto; width: fit-content; border-radius: 8px; color: #000000;">
             ${code}
           </div>
-          <p style="color: #999;">If you did not attempt to sign up but received this email, please disregard it.<br/>This code will remain active for <strong>1 hour</strong>.</p>
+          <p style="color: #000000;">If you did not attempt to sign up but received this email, please disregard it.<br/>This code will remain active for <strong>1 hour</strong>.</p>
         </div>
         <div style="margin-top: 20px; color: #aaa; font-size: 12px;">
           &copy; ${new Date().getFullYear()} Tuluvluy. All rights reserved.
@@ -64,7 +64,7 @@ export async function sendVerificationCodeEmail(
   }
 }
 
-// 🔄 Send password reset email
+// 🔄 Send password reset email (with #000000 text color)
 export async function sendPasswordResetCodeEmail(
   email: string,
   name: string,
@@ -80,14 +80,14 @@ export async function sendPasswordResetCodeEmail(
       <div style="font-family: Arial, sans-serif; background-color: #f9f9fb; padding: 40px 0; text-align: center;">
         <div style="background-color: #ffffff; margin: 0 auto; padding: 40px 20px; max-width: 500px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
           <img src="${logoUrl}" alt="Tuluvluy Logo" style="width: 50px; margin-bottom: 20px;" />
-          <h2 style="margin-bottom: 20px; color: #333;">Reset your Tuluvluy password</h2>
-          <p style="color: #666;">Hi <strong>${name}</strong>,</p>
-          <p>You requested to reset your password. Use the following code:</p>
-          <div style="font-size: 32px; font-weight: bold; background-color: #f0f0f0; padding: 16px; margin: 30px auto; width: fit-content; border-radius: 8px;">
+          <h2 style="margin-bottom: 20px; color: #000000;">Reset your Tuluvluy password</h2>
+          <p style="color: #000000;">Hi <strong>${name}</strong>,</p>
+          <p style="color: #000000;">You requested to reset your password. Use the following code:</p>
+          <div style="font-size: 32px; font-weight: bold; background-color: #f0f0f0; padding: 16px; margin: 30px auto; width: fit-content; border-radius: 8px; color: #000000;">
             ${code}
           </div>
-          <p style="color: #999;">This code is valid for <strong>10 minutes</strong>.</p>
-          <p>If you didn’t request a password reset, you can safely ignore this email.</p>
+          <p style="color: #000000;">This code is valid for <strong>10 minutes</strong>.</p>
+          <p style="color: #000000;">If you didn’t request a password reset, you can safely ignore this email.</p>
         </div>
         <div style="margin-top: 20px; color: #aaa; font-size: 12px;">
           &copy; ${new Date().getFullYear()} Tuluvluy. All rights reserved.

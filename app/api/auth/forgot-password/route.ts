@@ -65,7 +65,8 @@ export async function POST(req: NextRequest) {
       await sendPasswordResetCodeEmail(
         user.email,
         user.firstName || "User",
-        resetCode
+        resetCode,
+        user.username // Add the username argument
       );
       return NextResponse.json(
         {

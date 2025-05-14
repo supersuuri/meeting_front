@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
+import { Input } from "@/components/ui/input"; // Import the Input component
 
 const ResetPasswordContent = () => {
   const router = useRouter();
@@ -15,6 +16,8 @@ const ResetPasswordContent = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false); // State for new password visibility
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // State for confirm password visibility
 
   useEffect(() => {
     if (!email || !code) {
@@ -104,15 +107,36 @@ const ResetPasswordContent = () => {
               >
                 New Password
               </label>
-              <input
-                type="password"
-                id="newPassword"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
-                required
-              />
+              <div className="relative">
+                <Input
+                  type={showNewPassword ? "text" : "password"}
+                  id="newPassword"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="New Password"
+                  className="w-full p-3 pr-10 border-gray-300 focus:ring-[#4da1e6] text-gray-700" // Added pr-10 for icon spacing
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600 hover:text-gray-800"
+                  aria-label={
+                    showNewPassword ? "Hide password" : "Show password"
+                  }
+                >
+                  <Image
+                    src={
+                      showNewPassword
+                        ? "/assets/open-eye.svg"
+                        : "/assets/close-eye.svg"
+                    }
+                    alt={showNewPassword ? "Open eye" : "Close eye"}
+                    width={20}
+                    height={20}
+                  />
+                </button>
+              </div>
             </div>
             <div>
               <label
@@ -121,15 +145,36 @@ const ResetPasswordContent = () => {
               >
                 Confirm New Password
               </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
-                required
-              />
+              <div className="relative">
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm New Password"
+                  className="w-full p-3 pr-10 border-gray-300 focus:ring-[#4da1e6] text-gray-700" // Added pr-10 for icon spacing
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600 hover:text-gray-800"
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                >
+                  <Image
+                    src={
+                      showConfirmPassword
+                        ? "/assets/open-eye.svg"
+                        : "/assets/close-eye.svg"
+                    }
+                    alt={showConfirmPassword ? "Open eye" : "Close eye"}
+                    width={20}
+                    height={20}
+                  />
+                </button>
+              </div>
             </div>
 
             <button
@@ -150,7 +195,7 @@ const ResetPasswordContent = () => {
               href="/login"
               className="text-[#4da1e6] font-medium hover:underline"
             >
-              Sign In
+              Login
             </Link>
           </p>
         </div>
