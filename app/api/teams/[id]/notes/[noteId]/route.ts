@@ -57,8 +57,9 @@ export async function PUT(
     }
 
     await connectToDatabase();
+    const routeParams = await params; // Add this line to resolve params
     const note = await Note.findOneAndUpdate(
-      { _id: params.noteId, teamId: params.id },
+      { _id: routeParams.noteId, teamId: routeParams.id }, // Use resolvedParams.noteId and resolvedParams.id
       {
         title: title.trim(),
         content: content.trim(),

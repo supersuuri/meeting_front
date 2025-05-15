@@ -93,7 +93,7 @@ const NavBar = () => {
             src="/assets/logo.png"
             width={100}
             height={60}
-            alt="Let's talk"
+            alt="Tuluvluy"
           />
         </Link>
 
@@ -102,31 +102,35 @@ const NavBar = () => {
           <div className="flex flex-1 flex-wrap gap-2 sm:gap-6">
             {navLinks.map((item) => {
               const isActive = !!(
-          pathname === item.route ||
-          pathname?.startsWith(`${item.route}/`)
+                pathname === item.route ||
+                pathname?.startsWith(`${item.route}/`)
               );
 
               return (
-          <Link
-            href={item.route}
-            key={item.label}
-            className={cn(
-              "flex gap-2 items-center p-2 sm:p-4 rounded-lg justify-start hover:scale-110 duration-300",
-              isActive && "bg-blue-100 rounded-3xl"
-            )}
-          >
-            <Image
-              src={item.imgURL}
-              alt={item.label}
-              width={20}
-              height={20}
-              className="sm:w-6 sm:h-6"
-            />
+                <Link
+                  href={item.route}
+                  key={item.label}
+                  className={cn(
+                    "flex gap-2 items-center p-2 sm:p-4 rounded-lg justify-start hover:scale-110 duration-300",
+                    isActive && "bg-blue-100 rounded-3xl"
+                  )}
+                >
+                  <Image
+                    src={item.imgURL}
+                    alt={item.label}
+                    width={20}
+                    height={20}
+                    className="sm:w-6 sm:h-6"
+                  />
 
-            <p className={cn("text-sm sm:text-lg font-semibold hidden md:block")}>
-              {item.label}
-            </p>
-          </Link>
+                  <p
+                    className={cn(
+                      "text-sm sm:text-lg font-semibold hidden md:block"
+                    )}
+                  >
+                    {item.label}
+                  </p>
+                </Link>
               );
             })}
           </div>
@@ -134,9 +138,9 @@ const NavBar = () => {
 
         {/* User button */}
         <div ref={wrapperRef} className="relative flex gap-6 items-center">
-            <div className="hidden sm:block">
+          <div className="hidden sm:block">
             <DateAndTime />
-            </div>
+          </div>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-300 focus:outline-none focus:border-blue-500"

@@ -89,9 +89,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (user.isEmailVerified) {
-      // If already verified, consider if they should be logged in or just informed.
-      // For now, let's keep the existing behavior for this specific case.
-      // A token could be generated here too if desired.
       return NextResponse.json(
         { success: true, message: "Email is already verified." },
         { status: 200 }

@@ -30,6 +30,7 @@ interface NoteProps {
   teamId: string;
   onUpdate: () => void;
   onDelete: () => void;
+  searchTerm?: string; // Add searchTerm to props
 }
 
 export default function TeamNote({
@@ -37,6 +38,7 @@ export default function TeamNote({
   teamId,
   onUpdate,
   onDelete,
+  searchTerm, // Destructure searchTerm
 }: NoteProps) {
   const { token } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -134,11 +136,33 @@ export default function TeamNote({
     return user.username || user.email || "Unknown User";
   };
 
+  // Helper function to highlight matches
+  const highlightMatch = (text: string, highlight: string | undefined) => {
+    if (!highlight || !text) {
+      return text;
+    }
+    const regex = new RegExp(`(${highlight})`, "gi");
+    const parts = text.split(regex);
+    return (
+      <>
+        {parts.map((part, i) =>
+          regex.test(part) ? (
+            <strong key={i} className="bg-yellow-200">
+              {part}
+            </strong>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-4">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-xl font-semibold">
-          {note.title || "Untitled Note"}
+          {highlightMatch(note.title || "Untitled Note", searchTerm)}
         </h3>
         <div className="flex gap-2">
           <button
@@ -159,7 +183,7 @@ export default function TeamNote({
       </div>
 
       <p className="text-gray-600 mb-4 whitespace-pre-wrap">
-        {note.content || "No content"}
+        {highlightMatch(note.content || "No content", searchTerm)}
       </p>
 
       {note.tags && note.tags.length > 0 && (

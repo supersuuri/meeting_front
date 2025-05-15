@@ -38,7 +38,32 @@ export async function GET(
     }
 
     await connectToDatabase();
-    const notes = await Note.find({ teamId: params.id })
+    const routeParams = await params; // Add this line to resolve params
+
+    const { searchParams } = new URL(req.url);
+    const searchTerm = searchParams.get("searchTerm");
+    const tagsQuery = searchParams.get("tags");
+
+    let query: any = { teamId: routeParams.id };
+
+    if (searchTerm) {
+      query.$or = [
+        { title: { $regex: searchTerm, $options: "i" } },
+        { content: { $regex: searchTerm, $options: "i" } },
+      ];
+    }
+
+    if (tagsQuery) {
+      const tagsArray = tagsQuery
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+      if (tagsArray.length > 0) {
+        query.tags = { $in: tagsArray };
+      }
+    }
+
+    const notes = await Note.find(query) // Use resolvedParams.id
       .populate("createdBy", "username email")
       .populate("lastEditedBy", "username email")
       .sort({ updatedAt: -1 })
@@ -105,11 +130,12 @@ export async function POST(
     }
 
     await connectToDatabase();
+    const routeParams = await params; // Add this line
     const note = await Note.create({
       title: title.trim(),
       content: content.trim(),
       tags: tags?.filter(Boolean) || [],
-      teamId: params.id,
+      teamId: routeParams.id, // Change params.id to routeParams.id
       createdBy: decoded.id,
       lastEditedBy: decoded.id,
     });

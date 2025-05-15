@@ -79,6 +79,12 @@ export default function TeamPage() {
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
   const [newNoteTags, setNewNoteTags] = useState("");
+  const [searchTerm, setSearchTerm] = useState(""); // New state for search term
+  const [filterTags, setFilterTags] = useState(""); // New state for filter tags
+  const [tagInput, setTagInput] = useState(""); // For the controlled input for tags
+  const [allTeamTags, setAllTeamTags] = useState<string[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
 
   // 1. fetchData only fetches the team
   const fetchData = useCallback(async () => {
@@ -142,7 +148,21 @@ export default function TeamPage() {
   const fetchNotes = useCallback(async () => {
     if (!teamId || !token) return;
     try {
-      const res = await fetch(`/api/teams/${teamId}/notes`, {
+      let url = `/api/teams/${teamId}/notes`;
+      const queryParams = new URLSearchParams();
+      if (searchTerm.trim()) {
+        queryParams.append("searchTerm", searchTerm.trim());
+      }
+      // Use filterTags for the actual query, which is updated by tagInput
+      if (filterTags.trim()) {
+        queryParams.append("tags", filterTags.trim());
+      }
+      const queryString = queryParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+
+      const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -150,18 +170,44 @@ export default function TeamPage() {
       if (res.ok) {
         const data = await res.json();
         setNotes(data.notes);
+      } else {
+        setNotes([]); // Clear notes on error or if not found
+        console.error("Failed to fetch notes:", await res.text());
       }
     } catch (error) {
       console.error("Error fetching notes:", error);
+      setNotes([]);
+    }
+  }, [teamId, token, searchTerm, filterTags]); // Add searchTerm and filterTags to dependencies
+
+  const fetchAllTeamTags = useCallback(async () => {
+    if (!teamId || !token) return;
+    try {
+      const res = await fetch(`/api/teams/${teamId}/notes/tags`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAllTeamTags(data.tags || []);
+      } else {
+        console.error("Failed to fetch team tags:", await res.text());
+        setAllTeamTags([]);
+      }
+    } catch (error) {
+      console.error("Error fetching team tags:", error);
+      setAllTeamTags([]);
     }
   }, [teamId, token]);
 
-  // Add useEffect for fetching notes
+  // useEffect for fetching notes and all team tags
   useEffect(() => {
     if (activeTab === "notes") {
       fetchNotes();
+      fetchAllTeamTags();
     }
-  }, [activeTab, fetchNotes]);
+  }, [activeTab, fetchNotes, fetchAllTeamTags]); // Added fetchAllTeamTags
 
   const handleAdd = async () => {
     if (!newEmail.trim() || !token) return;
@@ -341,6 +387,60 @@ export default function TeamPage() {
     }
   };
 
+  const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTagInput(value);
+    setFilterTags(value); // Update filterTags to trigger search as user types
+
+    const lastTagPart = value.split(",").pop()?.trim().toLowerCase() || "";
+
+    if (lastTagPart) {
+      const currentSelectedTags = value
+        .toLowerCase()
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t);
+      const suggestions = allTeamTags.filter(
+        (tag) =>
+          tag.toLowerCase().startsWith(lastTagPart) && // Changed from includes to startsWith
+          !currentSelectedTags.includes(tag.toLowerCase()) // Don't suggest already selected/typed tags
+      );
+      setTagSuggestions(suggestions);
+      setShowTagSuggestions(suggestions.length > 0);
+    } else {
+      setTagSuggestions([]);
+      setShowTagSuggestions(false);
+    }
+  };
+
+  const handleTagSuggestionClick = (suggestion: string) => {
+    const currentTags = tagInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t);
+    let newTagsArray: string[];
+
+    // If the suggestion is already part of the input, remove it (toggle behavior)
+    // Or, more simply, just ensure it's added if not present in the last part.
+    // For this implementation, we'll append or replace the last part.
+    const parts = tagInput.split(",");
+    if (parts.length > 0) {
+      parts[parts.length - 1] = suggestion; // Replace the last part being typed
+      newTagsArray = parts.map((p) => p.trim()).filter((p) => p);
+    } else {
+      newTagsArray = [suggestion];
+    }
+
+    // Ensure no duplicates if user manually typed something similar
+    const uniqueNewTags = Array.from(new Set(newTagsArray));
+    const newTagsString = uniqueNewTags.join(", ");
+
+    setTagInput(newTagsString);
+    setFilterTags(newTagsString); // This will trigger the fetchNotes
+    setShowTagSuggestions(false);
+    setTagSuggestions([]);
+  };
+
   // Render the appropriate content based on active tab
   const renderContent = () => {
     switch (activeTab) {
@@ -364,8 +464,90 @@ export default function TeamPage() {
               </button>
             </div>
 
+            {/* Search and Filter Inputs */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="search-notes"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Search Notes
+                </label>
+                <input
+                  type="text"
+                  id="search-notes"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="Search by title or content..."
+                />
+              </div>
+              <div className="relative">
+                {" "}
+                {/* Added relative positioning */}
+                <label
+                  htmlFor="filter-tags"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Filter by Tags (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  id="filter-tags"
+                  value={tagInput} // Use tagInput for the display value
+                  onChange={handleTagInputChange}
+                  onFocus={() => {
+                    // Show suggestions on focus if there's text
+                    const lastTagPart =
+                      tagInput.split(",").pop()?.trim().toLowerCase() || "";
+                    if (lastTagPart && allTeamTags.length > 0) {
+                      const currentSelectedTags = tagInput
+                        .toLowerCase()
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter((t) => t);
+                      const suggestions = allTeamTags.filter(
+                        (tag) =>
+                          tag.toLowerCase().startsWith(lastTagPart) && // Changed from includes to startsWith
+                          !currentSelectedTags.includes(tag.toLowerCase())
+                      );
+                      if (suggestions.length > 0) {
+                        setTagSuggestions(suggestions);
+                        setShowTagSuggestions(true);
+                      }
+                    }
+                  }}
+                  onBlur={() =>
+                    setTimeout(() => setShowTagSuggestions(false), 150)
+                  } // Delay to allow click
+                  className="w-full p-2 border rounded"
+                  placeholder="e.g., urgent, project-x"
+                  autoComplete="off"
+                />
+                {showTagSuggestions && tagSuggestions.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    <ul>
+                      {tagSuggestions.map((tag, index) => (
+                        <li
+                          key={index}
+                          onMouseDown={() => handleTagSuggestionClick(tag)} // Use onMouseDown
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                        >
+                          {tag}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* End Search and Filter Inputs */}
+
             {notes.length === 0 ? (
-              <p className="text-gray-500">No notes available yet.</p>
+              <p className="text-gray-500">
+                No notes found matching your criteria, or no notes available
+                yet.
+              </p>
             ) : (
               <div className="space-y-4">
                 {notes.map((note) => (
@@ -375,6 +557,7 @@ export default function TeamPage() {
                     teamId={teamId}
                     onUpdate={fetchNotes}
                     onDelete={fetchNotes}
+                    searchTerm={searchTerm} // Pass searchTerm here
                   />
                 ))}
               </div>

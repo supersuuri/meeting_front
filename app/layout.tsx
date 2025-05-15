@@ -19,8 +19,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Let's Talk",
+  title: "Tuluvluy",
   description: "A video conferencing app",
+  icons: {
+    icon: "https://meeting-app-navy.vercel.app/assets/logo.png",
+  },
 };
 
 export default function RootLayout({
