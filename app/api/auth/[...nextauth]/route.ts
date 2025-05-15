@@ -1,7 +1,7 @@
 import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-const authOptions: AuthOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -19,7 +19,13 @@ const authOptions: AuthOptions = {
         return null;
       },
     }),
+    // Example Provider (e.g., GitHub)
+    // GithubProvider({
+    //   clientId: process.env.GITHUB_ID,
+    //   clientSecret: process.env.GITHUB_SECRET,
+    // }),
   ],
+  secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
@@ -33,8 +39,6 @@ const authOptions: AuthOptions = {
   },
 };
 
-// instead of exporting default, assign to a handler
 const handler = NextAuth(authOptions);
 
-// the app-router needs named exports for each HTTP method
 export { handler as GET, handler as POST };
