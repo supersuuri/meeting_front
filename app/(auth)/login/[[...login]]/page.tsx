@@ -47,12 +47,15 @@ const LoginPage = () => {
       {/* Illustration / Welcome Panel */}
       <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#4da1e6] to-[#3a87c9] text-white p-10">
         <div className="space-y-4 max-w-sm">
-          <Image
-            src="/assets/meeting-picture-background.svg"
+          <img
             alt="Web illustration"
-            width={300}
-            height={300}
+            width="300"
+            height="300"
+            decoding="async"
+            data-nimg="1"
             className="mt-6"
+            src="/assets/meeting-picture-background.svg"
+            style={{ color: "transparent" }}
           />
           <h2 className="text-4xl font-bold">Explore the Open Web</h2>
           <p className="opacity-90">
