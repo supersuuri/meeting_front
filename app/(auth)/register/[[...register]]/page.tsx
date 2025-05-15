@@ -84,7 +84,7 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
       {/* Illustration / Welcome Panel */}
-      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#3a87c9] to-[#4da1e6] text-white p-10">
+      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#3a87c9] to-[#1A1AFF] text-white p-10">
         <div className="space-y-4 max-w-sm">
           <img
             alt="Web illustration"
@@ -127,7 +127,7 @@ const RegisterPage = () => {
                   value={formData.firstName}
                   onChange={handleChange}
                   placeholder="First Name"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 />
               </div>
               <div>
@@ -138,7 +138,7 @@ const RegisterPage = () => {
                   value={formData.lastName}
                   onChange={handleChange}
                   placeholder="Last Name"
-                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 />
               </div>
             </div>
@@ -151,7 +151,7 @@ const RegisterPage = () => {
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="Username"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 required
               />
             </div>
@@ -164,7 +164,7 @@ const RegisterPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Email"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 required
               />
             </div>
@@ -177,7 +177,7 @@ const RegisterPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Password"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 required
               />
               <button
@@ -211,7 +211,7 @@ const RegisterPage = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="Confirm Password"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 required
               />
               <button
@@ -240,7 +240,7 @@ const RegisterPage = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-gradient-to-r from-[#4da1e6] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition"
+              className="w-full py-3 bg-gradient-to-r from-[#1A1AFF] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition"
             >
               {isSubmitting ? "Registering..." : "Register"}
             </button>
@@ -250,7 +250,7 @@ const RegisterPage = () => {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-[#4da1e6] font-medium hover:underline"
+              className="text-[#1A1AFF] font-medium hover:underline"
             >
               Login
             </Link>

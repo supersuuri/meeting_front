@@ -78,14 +78,6 @@ const MainMenu = () => {
           className: "!bg-gray-300 !rounded-3xl !py-8 !px-5 !justify-center",
         });
       }
-
-      if (meetingState === "Schedule") {
-        router.push("/upcoming");
-        toast(`Your meeting is scheduled at ${values.dateTime}`, {
-          duration: 5000,
-          className: "!bg-gray-300 !rounded-3xl !py-8 !px-5 !justify-center",
-        });
-      }
     } catch (err: any) {
       toast(`Failed to create Meeting ${err.message}`, {
         duration: 3000,
@@ -170,65 +162,6 @@ const MainMenu = () => {
           </DialogHeader>
         </DialogContent>
       </Dialog>
-
-      <Dialog>
-        <DialogTrigger className="w-full">
-          <MenuItemCard
-            img="/assets/calendar.svg"
-            title="Notes"
-            bgColor="bg-blue-600"
-            hoverColor="hover:bg-blue-800"
-          />
-        </DialogTrigger>
-        <DialogContent className=" bg-gray-200 px-16 py-10 text-gray-900 !rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-3xl font-black leading-relaxed text-center mb-5 ">
-              Schedule Meeting
-            </DialogTitle>
-            <DialogDescription className="flex flex-col gap-3">
-              Add a meeting description
-              <Textarea
-                className="inputs p-5"
-                rows={4}
-                onChange={(e) =>
-                  setValues({ ...values, description: e.target.value })
-                }
-              />
-            </DialogDescription>
-            <div className="flex w-full flex-col gap-2.5">
-              <label className="text-base font-normal leading-[22.4px] text-sky-2">
-                Select Date and Time
-              </label>
-              <DatePicker
-                preventOpenOnFocus
-                selected={values.dateTime}
-                onChange={(date) => setValues({ ...values, dateTime: date! })}
-                showTimeSelect
-                timeIntervals={15}
-                timeCaption="time"
-                dateFormat="MMMM d, yyyy h:mm aa"
-                className="inputs w-full rounded p-2 focus:outline-hidden focus:border-blue-500 focus:ring-3 focus:ring-blue-200  "
-              />
-            </div>
-            <Button
-              className="!mt-5 font-extrabold text-lg text-white rounded-xl bg-blue-700 py-5 px-10 hover:bg-blue-900 hover:scale-110 transition ease-in-out delay-75 duration-700 hover:-translate-y-1 cursor-pointer"
-              onClick={() => setMeetingState("Schedule")}
-            >
-              Submit
-            </Button>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-
-      <div className="w-full">
-        <MenuItemCard
-          img="/assets/recordings2.svg"
-          title="Recordings"
-          bgColor="bg-blue-600"
-          hoverColor="hover:bg-blue-800"
-          handleClick={() => router.push("/recordings")}
-        />
-      </div>
     </section>
   );
 };

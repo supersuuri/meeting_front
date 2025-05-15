@@ -78,7 +78,7 @@ const ResetPasswordContent = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
-      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#4da1e6] to-[#3a87c9] text-white p-10">
+      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#1A1AFF] to-[#3a87c9] text-white p-10">
         <div className="space-y-4 max-w-sm text-center md:text-left">
           <Image
             src="/assets/reset-password.svg" // Choose a relevant image
@@ -114,7 +114,7 @@ const ResetPasswordContent = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="New Password"
-                  className="w-full p-3 pr-10 border-gray-300 focus:ring-[#4da1e6] text-gray-700" // Added pr-10 for icon spacing
+                  className="w-full p-3 pr-10 border-gray-300 focus:ring-[#1A1AFF] text-gray-700" // Added pr-10 for icon spacing
                   required
                 />
                 <button
@@ -152,7 +152,7 @@ const ResetPasswordContent = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm New Password"
-                  className="w-full p-3 pr-10 border-gray-300 focus:ring-[#4da1e6] text-gray-700" // Added pr-10 for icon spacing
+                  className="w-full p-3 pr-10 border-gray-300 focus:ring-[#1A1AFF] text-gray-700" // Added pr-10 for icon spacing
                   required
                 />
                 <button
@@ -184,7 +184,7 @@ const ResetPasswordContent = () => {
                 newPassword.length < 6 ||
                 newPassword !== confirmPassword
               }
-              className="w-full py-3 bg-gradient-to-r from-[#4da1e6] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition disabled:opacity-70"
+              className="w-full py-3 bg-gradient-to-r from-[#1A1AFF] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition disabled:opacity-70"
             >
               {isSubmitting ? "Resetting..." : "Reset Password"}
             </button>
@@ -193,7 +193,7 @@ const ResetPasswordContent = () => {
             Remembered your password after all?{" "}
             <Link
               href="/login"
-              className="text-[#4da1e6] font-medium hover:underline"
+              className="text-[#1A1AFF] font-medium hover:underline"
             >
               Login
             </Link>

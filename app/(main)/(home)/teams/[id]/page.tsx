@@ -9,7 +9,14 @@ import EmailSearch from "@/components/EmailSearch"; // Add this import
 import TeamNote from "@/components/TeamNote";
 
 // Import icons for sidebar
-import { Clipboard, FileText, Users, Settings } from "lucide-react";
+import {
+  Clipboard,
+  FileText,
+  Users,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 import {
   Dialog,
@@ -85,6 +92,19 @@ export default function TeamPage() {
   const [allTeamTags, setAllTeamTags] = useState<string[]>([]);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // New state for sidebar collapse
+
+  // New state for the change role modal
+  const [showChangeRoleModal, setShowChangeRoleModal] = useState(false);
+  const [editingMemberInfo, setEditingMemberInfo] = useState<{
+    id: string;
+    email: string;
+    username?: string;
+    currentIsAdmin: boolean;
+  } | null>(null);
+  const [selectedRoleInModal, setSelectedRoleInModal] = useState<
+    "member" | "admin"
+  >("member");
 
   // 1. fetchData only fetches the team
   const fetchData = useCallback(async () => {
@@ -441,6 +461,19 @@ export default function TeamPage() {
     setTagSuggestions([]);
   };
 
+  // Toggle sidebar collapsed state
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  // Determine the member’s current role and whether the Save button should be disabled
+  const currentRole = editingMemberInfo
+    ? editingMemberInfo.currentIsAdmin
+      ? "admin"
+      : "member"
+    : undefined;
+  const isSaveDisabled = !editingMemberInfo || selectedRoleInModal === currentRole;
+
   // Render the appropriate content based on active tab
   const renderContent = () => {
     switch (activeTab) {
@@ -549,7 +582,7 @@ export default function TeamPage() {
                 yet.
               </p>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 ms:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
                 {notes.map((note) => (
                   <TeamNote
                     key={note._id}
@@ -645,7 +678,7 @@ export default function TeamPage() {
                 </button>
               )}
             </div>
-            <ul className="space-y-2 mb-4">
+            <ul className="grid grid-cols-1 ms:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
               {members.map((m) => {
                 const isMemberAlsoAdmin = team?.admins
                   ?.map(String)
@@ -669,17 +702,18 @@ export default function TeamPage() {
                             <button
                               className="ml-2 p-1 hover:bg-gray-100 rounded"
                               onClick={() => {
-                                if (isMemberAlsoAdmin) {
-                                  handleDemoteFromAdmin(m._id);
-                                } else {
-                                  handlePromoteToAdmin(m._id);
-                                }
+                                setEditingMemberInfo({
+                                  id: m._id,
+                                  email: m.email,
+                                  username: m.username,
+                                  currentIsAdmin: !!isMemberAlsoAdmin, // Ensure boolean
+                                });
+                                setSelectedRoleInModal(
+                                  isMemberAlsoAdmin ? "admin" : "member"
+                                );
+                                setShowChangeRoleModal(true);
                               }}
-                              title={
-                                isMemberAlsoAdmin
-                                  ? "Remove admin role"
-                                  : "Make admin"
-                              }
+                              title="Edit role"
                             >
                               <img
                                 src="/assets/pencil.svg"
@@ -705,6 +739,7 @@ export default function TeamPage() {
                 );
               })}
             </ul>
+            {/* Existing Add Member Modal Dialog */}
             <Dialog
               open={showAddMemberModal}
               onOpenChange={(isOpen) => {
@@ -795,6 +830,106 @@ export default function TeamPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* New Change Role Modal Dialog */}
+            {editingMemberInfo && (
+              <Dialog
+                open={showChangeRoleModal}
+                onOpenChange={(isOpen) => {
+                  setShowChangeRoleModal(isOpen);
+                  if (!isOpen) {
+                    setEditingMemberInfo(null);
+                  }
+                }}
+              >
+                <DialogContent className="bg-white p-6 rounded-lg shadow-xl sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-semibold text-gray-900">
+                      Change Role for{" "}
+                      {editingMemberInfo.username ||
+                        editingMemberInfo.email.split("@")[0]}
+                    </DialogTitle>
+                    <DialogDescription className="mt-1 text-sm text-gray-600">
+                      Current role:{" "}
+                      {editingMemberInfo.currentIsAdmin ? "Admin" : "Member"}.
+                      Select the new role below.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="mt-6 space-y-4">
+                    <div>
+                      <label
+                        htmlFor="change-member-role-modal-select"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        New Role
+                      </label>
+                      <select
+                        id="change-member-role-modal-select"
+                        value={selectedRoleInModal}
+                        onChange={(e) =>
+                          setSelectedRoleInModal(
+                            e.target.value as "member" | "admin"
+                          )
+                        }
+                        className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 bg-white"
+                      >
+                        <option value="member">Member</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="mt-8 sm:flex sm:flex-row-reverse">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!editingMemberInfo) return;
+
+                        const roleChanged = selectedRoleInModal !== currentRole;
+
+                        if (roleChanged) {
+                          try {
+                            if (selectedRoleInModal === "admin") {
+                              await handlePromoteToAdmin(editingMemberInfo.id);
+                            } else {
+                              await handleDemoteFromAdmin(editingMemberInfo.id);
+                            }
+                          } catch (modalError) {
+                            console.error("Error changing role:", modalError);
+                          }
+                        }
+
+                        setShowChangeRoleModal(false);
+                        setEditingMemberInfo(null);
+                      }}
+                      className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm
+    ${
+      isSaveDisabled
+        ? "bg-blue-300 text-white cursor-not-allowed opacity-50"
+        : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+    }`}
+                      disabled={isSaveDisabled}
+                    >
+                      {loading && editingMemberInfo
+                        ? "Saving..."
+                        : "Save Changes"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 sm:mt-0 sm:w-auto sm:text-sm"
+                      onClick={() => {
+                        setShowChangeRoleModal(false);
+                        setEditingMemberInfo(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         );
       case "settings":
@@ -942,9 +1077,28 @@ export default function TeamPage() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="w-64 text-black flex flex-col">
-        <div className="p-4">
-          <h1 className="text-xl font-bold truncate">{team.name}</h1>
+      <div
+        className={`text-black flex flex-col transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? "w-20" : "w-64"
+        }`}
+      >
+        <div className="p-4 flex items-center justify-between">
+          {!sidebarCollapsed && (
+            <h1 className="text-xl font-bold truncate">{team.name}</h1>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-2 hover:bg-gray-100 rounded"
+            aria-label={
+              sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+            }
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight size={20} />
+            ) : (
+              <ChevronLeft size={20} />
+            )}
+          </button>
         </div>
 
         {/* Navigation links */}
@@ -957,10 +1111,14 @@ export default function TeamPage() {
                   activeTab === "tasks"
                     ? "bg-gray-200 border-l-4 border-blue-500"
                     : ""
-                }`}
+                } ${sidebarCollapsed ? "justify-center" : ""}`}
+                title="Tasks"
               >
-                <Clipboard className="mr-3" size={20} />
-                <span>Tasks</span>
+                <Clipboard
+                  className={!sidebarCollapsed ? "mr-3" : ""}
+                  size={20}
+                />
+                {!sidebarCollapsed && <span>Tasks</span>}
               </button>
             </li>
             <li>
@@ -970,10 +1128,14 @@ export default function TeamPage() {
                   activeTab === "notes"
                     ? "bg-gray-200 border-l-4 border-blue-500"
                     : ""
-                }`}
+                } ${sidebarCollapsed ? "justify-center" : ""}`}
+                title="Notes"
               >
-                <FileText className="mr-3" size={20} />
-                <span>Notes</span>
+                <FileText
+                  className={!sidebarCollapsed ? "mr-3" : ""}
+                  size={20}
+                />
+                {!sidebarCollapsed && <span>Notes</span>}
               </button>
             </li>
             <li>
@@ -983,10 +1145,11 @@ export default function TeamPage() {
                   activeTab === "members"
                     ? "bg-gray-200 border-l-4 border-blue-500"
                     : ""
-                }`}
+                } ${sidebarCollapsed ? "justify-center" : ""}`}
+                title="Members"
               >
-                <Users className="mr-3" size={20} />
-                <span>Members</span>
+                <Users className={!sidebarCollapsed ? "mr-3" : ""} size={20} />
+                {!sidebarCollapsed && <span>Members</span>}
               </button>
             </li>
             <li>
@@ -996,10 +1159,14 @@ export default function TeamPage() {
                   activeTab === "settings"
                     ? "bg-gray-200 border-l-4 border-blue-500"
                     : ""
-                }`}
+                } ${sidebarCollapsed ? "justify-center" : ""}`}
+                title="Settings"
               >
-                <Settings className="mr-3" size={20} />
-                <span>Settings</span>
+                <Settings
+                  className={!sidebarCollapsed ? "mr-3" : ""}
+                  size={20}
+                />
+                {!sidebarCollapsed && <span>Settings</span>}
               </button>
             </li>
           </ul>

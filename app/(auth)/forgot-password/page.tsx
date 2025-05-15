@@ -43,7 +43,7 @@ const ForgotPasswordPage = () => {
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
       {/* Illustration / Welcome Panel */}
-      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#4da1e6] to-[#3a87c9] text-white p-10">
+      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#1A1AFF] to-[#3a87c9] text-white p-10">
         <div className="space-y-4 max-w-sm text-center md:text-left">
           <Image
             src="/assets/reset-password.svg"
@@ -80,7 +80,7 @@ const ForgotPasswordPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 required
               />
             </div>
@@ -88,7 +88,7 @@ const ForgotPasswordPage = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-gradient-to-r from-[#4da1e6] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition disabled:opacity-70"
+              className="w-full py-3 bg-gradient-to-r from-[#1A1AFF] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition disabled:opacity-70"
             >
               {isSubmitting ? "Sending..." : "Send verification code"}
             </button>
@@ -98,7 +98,7 @@ const ForgotPasswordPage = () => {
             Remember your password?{" "}
             <Link
               href="/login"
-              className="text-[#4da1e6] font-medium hover:underline"
+              className="text-[#1A1AFF] font-medium hover:underline"
             >
               Login
             </Link>

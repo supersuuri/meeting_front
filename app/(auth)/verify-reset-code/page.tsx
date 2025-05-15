@@ -107,7 +107,7 @@ const VerifyResetCodeContent = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
-      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#4da1e6] to-[#3a87c9] text-white p-10">
+      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#1A1AFF] to-[#3a87c9] text-white p-10">
         <div className="space-y-4 max-w-sm text-center md:text-left">
           <Image
             src="/assets/verification.gif" // Or a more relevant image
@@ -154,7 +154,7 @@ const VerifyResetCodeContent = () => {
                 }}
                 placeholder=""
                 maxLength={6}
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700 text-center tracking-[0.5em]"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700 text-center tracking-[0.5em]"
                 required
               />
             </div>
@@ -162,7 +162,7 @@ const VerifyResetCodeContent = () => {
             <button
               type="submit"
               disabled={isSubmitting || code.length !== 6}
-              className="w-full py-3 bg-gradient-to-r from-[#4da1e6] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition disabled:opacity-70"
+              className="w-full py-3 bg-gradient-to-r from-[#1A1AFF] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition disabled:opacity-70"
             >
               {isSubmitting ? "Verifying..." : "Verify Code"}
             </button>
@@ -174,14 +174,14 @@ const VerifyResetCodeContent = () => {
               type="button"
               onClick={handleResendCode}
               disabled={isResending}
-              className="text-[#4da1e6] font-medium hover:underline disabled:opacity-70 disabled:cursor-not-allowed"
+              className="text-[#1A1AFF] font-medium hover:underline disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isResending ? "Sending..." : "Resend Code"}
             </button>{" "}
             or{" "}
             <Link
               href="/login"
-              className="text-[#4da1e6] font-medium hover:underline"
+              className="text-[#1A1AFF] font-medium hover:underline"
             >
               Back to Login
             </Link>

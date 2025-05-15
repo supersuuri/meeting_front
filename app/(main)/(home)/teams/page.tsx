@@ -35,7 +35,8 @@ export default function TeamsPage() {
 
   const userId = token ? JSON.parse(atob(token.split(".")[1]))?.id : null;
 
-  const fetchTeams = useCallback(() => { // Wrapped in useCallback
+  const fetchTeams = useCallback(() => {
+    // Wrapped in useCallback
     if (!token) return;
     setLoadingTeams(true);
     fetch("/api/teams", {
@@ -78,7 +79,8 @@ export default function TeamsPage() {
   }, [isLoading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (isAuthenticated && token) { // Ensure token exists before fetching
+    if (isAuthenticated && token) {
+      // Ensure token exists before fetching
       fetchTeams();
     }
   }, [isAuthenticated, token, fetchTeams]); // Added fetchTeams
@@ -91,7 +93,9 @@ export default function TeamsPage() {
   };
 
   return (
-    <div className="animate-fade-in p-4 sm:p-6"> {/* Added padding to the main container */}
+    <div className="animate-fade-in p-4 sm:p-6">
+      {" "}
+      {/* Added padding to the main container */}
       {/* header + create button */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
         <h1 className="text-xl sm:text-2xl font-bold">Your Teams</h1>
@@ -99,23 +103,25 @@ export default function TeamsPage() {
           onClick={() => setShowCreateModal(true)}
           className="px-3 py-2 sm:px-4 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
         >
-          <PlusCircle size={18} className="sm:hidden" /> {/* Icon for smaller screens */}
-          <span className="hidden sm:inline">Create Team</span>
-          <span className="sm:hidden">New Team</span> {/* Shorter text for mobile */}
+          <PlusCircle size={18} /> <span>New Team</span>{" "}
+          {/* Shorter text for mobile */}
         </Button>
       </div>
-
       {/* teams list */}
-      <div className="px-0 sm:px-6"> {/* Adjusted padding */}
+      <div className="px-0 sm:px-6">
+        {" "}
+        {/* Adjusted padding */}
         {teams.length ? (
-          <ul className="space-y-3"> {/* Increased space slightly */}
+          <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {teams.map((t, idx) => (
               <li
                 key={t._id ?? idx}
                 onClick={() => router.push(`/teams/${t._id}`)}
                 className="p-3 sm:p-4 bg-white border rounded-lg hover:bg-gray-50 flex items-center justify-between cursor-pointer transition-colors duration-150"
               >
-                <span className="text-sm sm:text-base font-medium truncate mr-2">{t.name}</span>
+                <span className="text-sm sm:text-base font-medium truncate mr-2">
+                  {t.name}
+                </span>
                 {userId && (
                   <button
                     onClick={(e) => {
@@ -144,13 +150,16 @@ export default function TeamsPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-gray-500 text-center sm:text-left mt-4">No teams yet. Start by creating one!</p>
+          <p className="text-gray-500 text-center sm:text-left mt-4">
+            No teams yet. Start by creating one!
+          </p>
         )}
       </div>
-
       {/* Confirm Delete/Leave Modal (using shadcn Dialog) */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-        <DialogContent className="sm:max-w-md"> {/* Responsive width */}
+        <DialogContent className="sm:max-w-md">
+          {" "}
+          {/* Responsive width */}
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
               {teamToDelete?.admins?.includes(userId)
@@ -159,8 +168,10 @@ export default function TeamsPage() {
             </DialogTitle>
             <DialogDescription className="mt-2 text-sm sm:text-base">
               Are you sure you want to{" "}
-              {teamToDelete?.admins?.includes(userId) ? "delete" : "leave"} the team "<strong>{teamToDelete?.name}</strong>"?
-              {teamToDelete?.admins?.includes(userId) && " This action cannot be undone."}
+              {teamToDelete?.admins?.includes(userId) ? "delete" : "leave"} the
+              team "<strong>{teamToDelete?.name}</strong>"?
+              {teamToDelete?.admins?.includes(userId) &&
+                " This action cannot be undone."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
@@ -190,23 +201,37 @@ export default function TeamsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Create Team Modal (custom) */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg"> {/* Responsive width and padding */}
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg">
+            {" "}
+            {/* Responsive width and padding */}
             <button
               onClick={() => setShowCreateModal(false)}
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full transition-colors"
               aria-label="Close modal"
             >
               {/* Using a simple X, consider an icon component if available */}
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
             {/* AddTeam component should also be responsive internally */}
-            <div className="p-6 sm:p-8"> {/* Padding inside the modal content area */}
+            <div className="p-6 sm:p-8">
+              {" "}
+              {/* Padding inside the modal content area */}
               <AddTeam onCreated={handleCreated} />
             </div>
           </div>

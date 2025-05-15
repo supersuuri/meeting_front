@@ -45,7 +45,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
       {/* Illustration / Welcome Panel */}
-      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#4da1e6] to-[#3a87c9] text-white p-10">
+      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-[#1A1AFF] to-[#3a87c9] text-white p-10">
         <div className="space-y-4 max-w-sm">
           <img
             alt="Web illustration"
@@ -87,7 +87,7 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 required
               />
             </div>
@@ -101,7 +101,7 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4da1e6] text-gray-700"
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] text-gray-700"
                 required
               />
               <button
@@ -134,13 +134,13 @@ const LoginPage = () => {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 text-[#4da1e6] focus:ring-[#4da1e6] border-gray-300 rounded"
+                  className="h-4 w-4 text-[#1A1AFF] focus:ring-[#1A1AFF] border-gray-300 rounded"
                 />
                 <span className="text-gray-600">Remember Me</span>
               </label>
               <Link
                 href="/forgot-password"
-                className="text-[#4da1e6] hover:underline"
+                className="text-[#1A1AFF] hover:underline"
               >
                 Forgot Password?
               </Link>
@@ -150,7 +150,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-gradient-to-r from-[#4da1e6] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition"
+              className="w-full py-3 bg-gradient-to-r from-[#1A1AFF] to-[#3a87c9] text-white rounded-lg shadow hover:from-[#3a87c9] hover:to-[#2e74b8] transition"
             >
               {isSubmitting ? "Logging in..." : "Sign In"}
             </button>
@@ -160,7 +160,7 @@ const LoginPage = () => {
             Don’t have an account?{" "}
             <Link
               href="/register"
-              className="text-[#4da1e6] font-medium hover:underline"
+              className="text-[#1A1AFF] font-medium hover:underline"
             >
               Sign Up
             </Link>

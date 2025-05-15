@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useBreakpoint } from "../lib/useBreakpoint";
 
 interface ProjectTask {
   _id: string;
@@ -157,19 +158,23 @@ const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
   addTask.loading = false;
 
   const updateTask = async () => {
-    if (!token || !editTask) { // editTask is still needed for its ID
+    if (!token || !editTask) {
+      // editTask is still needed for its ID
       setError("Please log in to update tasks");
       return;
     }
     try {
       // Calculate progress based on the current (potentially edited) dates in newTask
-      const currentProgress = calculateProgress(newTask.startDate, newTask.endDate);
+      const currentProgress = calculateProgress(
+        newTask.startDate,
+        newTask.endDate
+      );
 
       const payload = {
         name: newTask.name,
         startDate: newTask.startDate, // newTask.startDate is already a 'YYYY-MM-DD' string
-        endDate: newTask.endDate,     // newTask.endDate is already a 'YYYY-MM-DD' string
-        progress: currentProgress,    // Send the freshly calculated progress
+        endDate: newTask.endDate, // newTask.endDate is already a 'YYYY-MM-DD' string
+        progress: currentProgress, // Send the freshly calculated progress
         type: newTask.type,
         assignedTo: newTask.assignedTo || undefined, // Send undefined if empty string for "Unassigned"
       };
@@ -189,8 +194,12 @@ const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
         toast.error(response.data.message || "Failed to update task");
       }
     } catch (err: any) {
-      console.error("Update task error:", err.response?.data || err.message || err);
-      const message = err.response?.data?.message || err.message || "Failed to update task";
+      console.error(
+        "Update task error:",
+        err.response?.data || err.message || err
+      );
+      const message =
+        err.response?.data?.message || err.message || "Failed to update task";
       setError(message);
       toast.error(message);
     }
@@ -278,8 +287,12 @@ const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
     return progress;
   };
 
+  const isNarrow = useBreakpoint();
+  const columnWidth = isNarrow ? 80 : 60;
+  const listCellWidth = isNarrow ? "100px" : "200px";
+
   return (
-    <div className="p-4 max-w-6xl mx-auto bg-white rounded-lg mt-10 mb-10 py-10 px-10 border-1">
+    <div className="mx-auto max-w-screen px-4 py-6 sm:px-6 sm:py-8 bg-white rounded-lg shadow">
       <h1 className="text-2xl font-bold mb-4">Team Gantt Chart</h1>
 
       {error && <div className="text-red-500 mb-4">{error}</div>}
@@ -293,12 +306,12 @@ const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white border-1 shadow-md backdrop-blur-sm p-6 rounded-lg w-96">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white w-full max-w-sm sm:max-w-md md:max-w-lg rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-bold mb-4">
               {editTask ? "Edit Task/Milestone" : "Add Task/Milestone"}
             </h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <input
                 type="text"
                 placeholder="Task Name"
@@ -400,7 +413,7 @@ const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
                     assignedTo: e.target.value,
                   })
                 }
-                className="border p-2 w-full"
+                className="border p-2 w-full sm:col-span-2"
               >
                 <option value="">Unassigned</option>
                 {teamMembers.map((member) => (
@@ -410,23 +423,23 @@ const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
                 ))}
               </select>
             </div>
-            <div className="flex justify-end space-x-2 mt-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end mt-4">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="bg-gray-300 px-4 py-2 rounded"
+                className="w-full sm:w-auto bg-gray-300 px-4 py-2 rounded"
               >
                 Cancel
               </button>
               <button
                 onClick={handleModalSubmit}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
+                className="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded"
               >
                 {editTask ? "Update" : "Add"}
               </button>
               {editTask && (
                 <button
                   onClick={() => deleteTask(editTask.id)}
-                  className="bg-red-500 text-white px-4 py-2 rounded"
+                  className="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded"
                 >
                   Delete
                 </button>
@@ -437,40 +450,47 @@ const TeamGanttChart: React.FC<TeamGanttChartProps> = ({
       )}
 
       {tasks.length > 0 ? (
-        <Gantt
-          tasks={tasks}
-          viewMode={ViewMode.Day}
-          columnWidth={60}
-          listCellWidth="200px"
-          barCornerRadius={3}
-          barProgressColor="#4caf50"
-          barBackgroundColor="#2196f3"
-          milestoneBackgroundColor="#f44336"
-          todayColor="red"
-          onClick={(task) =>
-            openEditModal({
-              id: task.id,
-              name: task.name,
-              start: task.start,
-              end: task.end,
-              progress: task.progress,
-              type: task.type as "task" | "milestone",
-              assignedTo: (task as any).assignedTo,
-            })
-          }
-          TooltipContent={({ task }) => {
-            const assignedMember = teamMembers.find(
-              (m) => m.id === (task as any).assignedTo
-            );
-            return (
-              <div className="p-2">
-                <h3 className="font-bold">{task.name}</h3>
-                <p>Progress: {task.progress}%</p>
-                {assignedMember && <p>Assigned to: {assignedMember.name}</p>}
-              </div>
-            );
-          }}
-        />
+        <div className="overflow-x-auto w-full">
+          {/* enforce a reasonable minimum width so columns never collapse to zero */}
+          <div className="inline-block min-w-[600px]">
+            <Gantt
+              tasks={tasks}
+              viewMode={ViewMode.Day}
+              columnWidth={columnWidth}
+              listCellWidth={listCellWidth}
+              barCornerRadius={3}
+              barProgressColor="#4caf50"
+              barBackgroundColor="#2196f3"
+              milestoneBackgroundColor="#f44336"
+              todayColor="red"
+              onClick={(task) =>
+                openEditModal({
+                  id: task.id,
+                  name: task.name,
+                  start: task.start,
+                  end: task.end,
+                  progress: task.progress,
+                  type: task.type as "task" | "milestone",
+                  assignedTo: (task as any).assignedTo,
+                })
+              }
+              TooltipContent={({ task }) => {
+                const assignedMember = teamMembers.find(
+                  (m) => m.id === (task as any).assignedTo
+                );
+                return (
+                  <div className="p-2">
+                    <h3 className="font-bold">{task.name}</h3>
+                    <p>Progress: {task.progress}%</p>
+                    {assignedMember && (
+                      <p>Assigned to: {assignedMember.name}</p>
+                    )}
+                  </div>
+                );
+              }}
+            />
+          </div>
+        </div>
       ) : (
         <p>No tasks available</p>
       )}
