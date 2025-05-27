@@ -7,10 +7,3 @@ COPY . .
 EXPOSE 4000
 CMD [ "npm", "run", "start" ]
 
-# Step 2: Server With Nginx
-FROM nginx:1.23-alpine
-WORKDIR /usr/share/nginx/html
-RUN rm -rf *
-COPY --from=build /app/build .
-EXPOSE 80
-ENTRYPOINT [ "nginx", "-g", "daemon off;" ]
