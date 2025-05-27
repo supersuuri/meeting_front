@@ -27,4 +27,4 @@ jobs:
       - name: Delete old container
         run: docker rm -f nodejs-app-container
       - name: Run Docker Container
-        run: docker run -d -p 4000:4000 --name nodejs-app-container -e MONGO_PASSWORD='${{ wj4JXgUHv73S3Tab }}' thesuuri/nodejs-app
+        run: docker run -d -p 3000:3000 --name nodejs-app-container -e MONGO_PASSWORD='${{ wj4JXgUHv73S3Tab }}' thesuuri/nodejs-app
