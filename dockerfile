@@ -1,6 +1,7 @@
-FROM node:alpine3.20
+FROM scratch
+ADD alpine-minirootfs-3.20.6-x86_64.tar.gz /
 WORKDIR /app
-COPY package*.json ./
+COPY package.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
 EXPOSE 3000

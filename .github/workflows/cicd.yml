@@ -1,4 +1,4 @@
-name: Deploy Next.js App
+name: Deploy Node Application
 
 on:
   push:
@@ -9,42 +9,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout source
+      - name: Checkout Source
         uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
+      - name: Login to docker hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_NAME }}" --password-stdin
 
-      - name: Build Docker image
-        run: docker build -t thesuuri/nodejs-app .
-
-      - name: Push image to Docker Hub
+      - name: Build Docker Image
+        run: docker build -t thesuuri/nodejs-app  .
+      - name: Publish Image to docker hub
         run: docker push thesuuri/nodejs-app:latest
 
   deploy:
     needs: build
     runs-on: self-hosted
     steps:
-      - name: Pull image from Docker Hub
+      - name: Pull image from docker hub
         run: docker pull thesuuri/nodejs-app:latest
-
-      - name: Remove existing container (if any)
-        run: docker rm -f nodejs-app-container || true
-
-      - name: Run Docker container
-        run: |
-          docker run -d \
-            -p 3000:3000 \
-            --name nodejs-app-container \
-            -e NEXT_PUBLIC_STREAM_API_KEY=${{ secrets.NEXT_PUBLIC_STREAM_API_KEY }} \
-            -e STREAM_SECRET_KEY=${{ secrets.STREAM_SECRET_KEY }} \
-            -e MONGODB_URI=${{ secrets.MONGODB_URI }} \
-            -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
-            -e NEXT_PUBLIC_BASE_URL=${{ secrets.NEXT_PUBLIC_BASE_URL }} \
-            -e EMAIL_SERVER_HOST=${{ secrets.EMAIL_SERVER_HOST }} \
-            -e EMAIL_SERVER_PORT=${{ secrets.EMAIL_SERVER_PORT }} \
-            -e EMAIL_SERVER_SECURE=${{ secrets.EMAIL_SERVER_SECURE }} \
-            -e EMAIL_SERVER_USER=${{ secrets.EMAIL_SERVER_USER }} \
-            -e EMAIL_SERVER_PASSWORD=${{ secrets.EMAIL_SERVER_PASSWORD }} \
-            -e EMAIL_FROM=${{ secrets.EMAIL_FROM }} \
-            thesuuri/nodejs-app:latest
+      - name: Delete old container
+        run: docker rm -f nodejs-app-container
+      - name: Run Docker Container
+        run: docker run -d -p 3000:3000 --name nodejs-app-container -e MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} thesuuri/nodejs-app
