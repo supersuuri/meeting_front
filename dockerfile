@@ -1,5 +1,4 @@
-FROM scratch
-ADD alpine-minirootfs-3.20.6-x86_64.tar.gz /
+FROM node:alpine3.21
 WORKDIR /app
 COPY package.json ./
 RUN npm install --legacy-peer-deps
