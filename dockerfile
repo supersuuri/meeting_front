@@ -1,9 +1,7 @@
-
-FROM node:alpine3.18
+FROM node:alpine3.20
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
 COPY . .
-EXPOSE 4000
+EXPOSE 400
 CMD [ "npm", "run", "start" ]
-
