@@ -13,6 +13,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Login to docker hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_NAME }}" --password-stdin
+
       - name: Build Docker Image
         run: docker build -t thesuuri/nodejs-app  .
       - name: Publish Image to docker hub
@@ -27,4 +28,4 @@ jobs:
       - name: Delete old container
         run: docker rm -f nodejs-app-container
       - name: Run Docker Container
-        run: docker run -d -p 3000:3000 --name nodejs-app-container -e MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} thesuuri/nodejs-app
+        run: docker run -d -p 3000:3000 --name nodejs-app-container -e MONGO_PASSWORD= '${{ secrets.MONGO_PASSWORD }}' thesuuri/nodejs-app
