@@ -23,9 +23,12 @@ jobs:
     needs: build
     runs-on: self-hosted
     steps:
+      - name: Clean up disk space
+        run: docker system prune -af
+
       - name: Pull image from docker hub
         run: docker pull thesuuri/nodejs-app:latest
       - name: Delete old container
         run: docker rm -f nodejs-app-container
       - name: Run Docker Container
-        run: docker run -d -p 3000:3000 --name nodejs-app-container -e MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} thesuuri/reactjs-app
+        run: docker run -d -p 3000:3000 --name nodejs-app-container -e MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} thesuuri/nodejs-app
